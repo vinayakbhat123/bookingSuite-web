@@ -74,18 +74,18 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     <div className="w-full">
       <form
         onSubmit={handleSubmit}
-        className={`bg-white rounded-full p-2 sm:p-2.5 shadow-xl border border-slate-200/90 transition-all hover:shadow-2xl ${
+        className={`bg-white dark:bg-slate-900 rounded-full p-2 sm:p-2.5 shadow-xl border border-slate-200/90 dark:border-slate-800 transition-all hover:shadow-2xl ${
           compact ? 'max-w-4xl mx-auto' : 'max-w-5xl mx-auto'
         }`}
       >
         <div className="grid grid-cols-1 md:grid-cols-12 gap-1 items-center">
           {/* Destination */}
-          <div className="relative md:col-span-4 px-4 py-2 hover:bg-slate-50 rounded-full transition-colors cursor-pointer">
-            <label className="block text-[11px] font-bold text-slate-900 tracking-wider uppercase">
+          <div className="relative md:col-span-4 px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/80 rounded-full transition-colors cursor-pointer">
+            <label className="block text-[11px] font-bold text-slate-900 dark:text-slate-100 tracking-wider uppercase">
               Where
             </label>
             <div className="flex items-center gap-2 mt-0.5">
-              <MapPin className="w-4 h-4 text-rose-600 shrink-0" />
+              <MapPin className="w-4 h-4 text-rose-600 dark:text-rose-500 shrink-0" />
               <input
                 type="text"
                 value={city}
@@ -96,15 +96,15 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 onFocus={() => setShowCitySuggestions(true)}
                 onBlur={() => setTimeout(() => setShowCitySuggestions(false), 250)}
                 placeholder="Search Indian destinations (e.g. Goa, Jaipur)"
-                className="w-full text-sm font-semibold text-slate-800 placeholder-slate-400 bg-transparent focus:outline-none"
+                className="w-full text-sm font-semibold text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 bg-transparent focus:outline-none"
                 required
               />
             </div>
 
             {/* Quick City Suggestions Dropdown */}
             {showCitySuggestions && (
-              <div className="absolute top-full left-0 mt-3 w-80 bg-white rounded-3xl border border-slate-100 shadow-2xl p-4 z-50 animate-in fade-in">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-2">
+              <div className="absolute top-full left-0 mt-3 w-80 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-2xl p-4 z-50 animate-in fade-in">
+                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 px-2">
                   Popular Indian Destinations
                 </p>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -116,7 +116,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                         setCity(dest);
                         setShowCitySuggestions(false);
                       }}
-                      className="text-left px-3 py-2 text-xs font-medium text-slate-700 hover:bg-rose-50 hover:text-rose-700 rounded-xl transition-colors flex items-center gap-1.5"
+                      className="text-left px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-700 dark:hover:text-rose-400 rounded-xl transition-colors flex items-center gap-1.5"
                     >
                       <MapPin className="w-3 h-3 text-rose-500 shrink-0" />
                       <span>{dest}</span>
@@ -127,11 +127,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             )}
           </div>
 
-          <div className="hidden md:block w-px h-8 bg-slate-200 mx-auto" />
+          <div className="hidden md:block w-px h-8 bg-slate-200 dark:bg-slate-800 mx-auto" />
 
           {/* Check-In Date */}
-          <div className="md:col-span-3 px-4 py-2 hover:bg-slate-50 rounded-full transition-colors">
-            <label className="block text-[11px] font-bold text-slate-900 tracking-wider uppercase">
+          <div className="md:col-span-3 px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/80 rounded-full transition-colors">
+            <label className="block text-[11px] font-bold text-slate-900 dark:text-slate-100 tracking-wider uppercase">
               Check in
             </label>
             <div className="flex items-center gap-2 mt-0.5">
@@ -146,17 +146,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                     setEndDate(formatDateForApi(getDaysAhead(1, new Date(e.target.value))));
                   }
                 }}
-                className="w-full text-sm font-semibold text-slate-800 bg-transparent focus:outline-none"
+                className="w-full text-sm font-semibold text-slate-800 dark:text-slate-100 bg-transparent focus:outline-none"
                 required
               />
             </div>
           </div>
 
-          <div className="hidden md:block w-px h-8 bg-slate-200 mx-auto" />
+          <div className="hidden md:block w-px h-8 bg-slate-200 dark:bg-slate-800 mx-auto" />
 
           {/* Check-Out Date */}
-          <div className="md:col-span-3 px-4 py-2 hover:bg-slate-50 rounded-full transition-colors">
-            <label className="block text-[11px] font-bold text-slate-900 tracking-wider uppercase">
+          <div className="md:col-span-3 px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800/80 rounded-full transition-colors">
+            <label className="block text-[11px] font-bold text-slate-900 dark:text-slate-100 tracking-wider uppercase">
               Check out
             </label>
             <div className="flex items-center gap-2 mt-0.5">
@@ -166,7 +166,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 value={endDate}
                 min={startDate || formatDateForApi(getTomorrow())}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full text-sm font-semibold text-slate-800 bg-transparent focus:outline-none"
+                className="w-full text-sm font-semibold text-slate-800 dark:text-slate-100 bg-transparent focus:outline-none"
                 required
               />
             </div>
@@ -175,7 +175,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           {/* Rooms Count & Search Action */}
           <div className="md:col-span-2 flex items-center justify-between gap-2 pl-2 pr-1">
             <div className="px-2 py-1">
-              <label className="block text-[10px] font-bold text-slate-900 tracking-wider uppercase">
+              <label className="block text-[10px] font-bold text-slate-900 dark:text-slate-100 tracking-wider uppercase">
                 Rooms
               </label>
               <div className="flex items-center gap-1.5 mt-0.5">
@@ -183,10 +183,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 <select
                   value={roomsCount}
                   onChange={(e) => setRoomsCount(Number(e.target.value))}
-                  className="text-xs font-semibold text-slate-800 bg-transparent focus:outline-none cursor-pointer"
+                  className="text-xs font-semibold text-slate-800 dark:text-slate-100 bg-transparent focus:outline-none cursor-pointer"
                 >
                   {[1, 2, 3, 4, 5, 6, 8, 10].map((num) => (
-                    <option key={num} value={num}>
+                    <option key={num} value={num} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">
                       {num} {num === 1 ? 'Room' : 'Rooms'}
                     </option>
                   ))}

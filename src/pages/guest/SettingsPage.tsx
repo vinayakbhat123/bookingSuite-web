@@ -595,41 +595,41 @@ export const SettingsPage: React.FC = () => {
       {/* Tab 4: Roles & Data Export */}
       {activeTab === 'account' && (
         <div className="space-y-6 animate-in fade-in duration-300">
-          {/* RBAC Role Switcher */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-bold text-slate-900">Active View Role (RBAC)</h2>
-                <p className="text-xs text-slate-500 mt-1">
-                  Toggle your simulated view role to access administrative features and management portals.
-                </p>
+          {/* RBAC Role Switcher - Accessible only for privileged manager roles */}
+          {isHotelManager ? (
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">Hotel Management Authorization</h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Toggle between administrative view tiers to access management portals and configurations.
+                  </p>
+                </div>
+                <span className="px-3 py-1 bg-rose-50 text-rose-700 rounded-full text-xs font-bold border border-rose-200">
+                  Current: {getRoleLabel(activeRole)}
+                </span>
               </div>
-              <span className="px-3 py-1 bg-rose-50 text-rose-700 rounded-full text-xs font-bold border border-rose-200">
-                Current: {getRoleLabel(activeRole)}
-              </span>
-            </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {(['HOTEL_MANAGER', 'ADMIN', 'OWNER', 'GUEST'] as Role[]).map((r) => {
-                const isActive = activeRole === r;
-                return (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => switchSimulatedRole(r)}
-                    className={`p-4 rounded-2xl border text-center transition-all ${
-                      isActive
-                        ? 'border-rose-600 bg-rose-50/50 ring-2 ring-rose-500/20 font-bold'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                  >
-                    <span className="text-xs text-slate-900">{getRoleLabel(r)}</span>
-                  </button>
-                );
-              })}
-            </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {(['HOTEL_MANAGER', 'ADMIN', 'OWNER'] as Role[]).map((r) => {
+                  const isActive = activeRole === r;
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => switchSimulatedRole(r)}
+                      className={`p-4 rounded-2xl border text-center transition-all ${
+                        isActive
+                          ? 'border-rose-600 bg-rose-50/50 ring-2 ring-rose-500/20 font-bold'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <span className="text-xs text-slate-900">{getRoleLabel(r)}</span>
+                    </button>
+                  );
+                })}
+              </div>
 
-            {isHotelManager && (
               <div className="pt-2">
                 <Link
                   to="/manager"
@@ -638,8 +638,22 @@ export const SettingsPage: React.FC = () => {
                   <span>Open Hotel Manager Portal →</span>
                 </Link>
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">Account Access Level</h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Your account is registered as a verified Guest traveler. Hotel manager controls are restricted to authorized hotel staff.
+                  </p>
+                </div>
+                <span className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-bold border border-slate-200">
+                  Guest Access
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Export Data */}
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">

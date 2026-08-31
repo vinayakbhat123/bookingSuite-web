@@ -31,14 +31,14 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onSelect, selected = f
   return (
     <div
       id={`room-card-${room.id}`}
-      className={`flex flex-col md:flex-row bg-white rounded-3xl overflow-hidden border transition-all duration-300 ${
+      className={`flex flex-col md:flex-row bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border transition-all duration-300 ${
         selected
           ? 'border-rose-500 ring-2 ring-rose-500/20 shadow-lg'
-          : 'border-slate-200 hover:border-slate-300 hover:shadow-md'
+          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md'
       }`}
     >
       {/* Room Photo */}
-      <div className="relative w-full md:w-72 aspect-[16/10] md:aspect-auto overflow-hidden bg-slate-100 shrink-0">
+      <div className="relative w-full md:w-72 aspect-[16/10] md:aspect-auto overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0">
         <img
           src={photoUrl}
           alt={getRoomTypeLabel(room.roomType)}
@@ -54,14 +54,14 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onSelect, selected = f
       <div className="p-6 flex-1 flex flex-col justify-between">
         <div>
           <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-            <h4 className="text-lg font-bold text-slate-900">{getRoomTypeLabel(room.roomType)}</h4>
-            <div className="flex items-center gap-3 text-xs text-slate-600 font-medium">
+            <h4 className="text-lg font-bold text-slate-900 dark:text-white">{getRoomTypeLabel(room.roomType)}</h4>
+            <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400 font-medium">
               <span className="flex items-center gap-1">
-                <Users className="w-4 h-4 text-slate-400" />
+                <Users className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                 Up to {room.capacity} guests
               </span>
               {room.floor !== undefined && (
-                <span className="text-slate-400">• Floor {room.floor}</span>
+                <span className="text-slate-400 dark:text-slate-500">• Floor {room.floor}</span>
               )}
             </div>
           </div>
@@ -72,26 +72,26 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onSelect, selected = f
               {room.amenities.map((item, i) => (
                 <span
                   key={i}
-                  className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-slate-50 text-slate-700 border border-slate-200/60"
+                  className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60"
                 >
-                  <Check className="w-3 h-3 text-emerald-600" />
+                  <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                   {item.replace(/_/g, ' ')}
                 </span>
               ))}
             </div>
           ) : (
-            <p className="text-xs text-slate-500 my-2">High-speed Wi-Fi • En-suite Bathroom • Climate Control</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 my-2">High-speed Wi-Fi • En-suite Bathroom • Climate Control</p>
           )}
         </div>
 
         {/* Pricing & Selection CTA */}
-        <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4 mt-2">
+        <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 mt-2">
           <div>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black text-slate-900">{formatCurrency(room.basePrice)}</span>
-              <span className="text-xs text-slate-500 font-normal">/ night (base)</span>
+              <span className="text-2xl font-black text-slate-900 dark:text-white">{formatCurrency(room.basePrice)}</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">/ night (base)</span>
             </div>
-            <p className="text-[11px] text-slate-400">Total units available: {room.totalCount}</p>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500">Total units available: {room.totalCount}</p>
           </div>
 
           <button
@@ -101,7 +101,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onSelect, selected = f
               selected
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                 : !isAvailable
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed'
                 : 'bg-rose-600 hover:bg-rose-700 text-white hover:scale-105 active:scale-95'
             }`}
           >

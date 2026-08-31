@@ -121,6 +121,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
 
     root.setAttribute('data-accent', settings.accentColor || 'rose');
+    root.setAttribute('data-density', settings.uiDensity || 'comfortable');
 
     // Save to local storage
     try {

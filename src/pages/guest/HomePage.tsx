@@ -182,24 +182,24 @@ export const HomePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
       {/* Airbnb Hero & Search Section */}
-      <section className="relative pt-6 pb-12 px-4 sm:px-6 lg:px-8 border-b border-slate-100 bg-gradient-to-b from-rose-50/40 via-white to-white">
+      <section className="relative pt-6 pb-12 px-4 sm:px-6 lg:px-8 border-b border-slate-100 dark:border-slate-800/80 bg-gradient-to-b from-rose-50/40 via-white to-white dark:from-slate-900/80 dark:via-slate-950 dark:to-slate-950">
         <div className="max-w-6xl mx-auto space-y-6">
           {/* Header Tag */}
           <div className="text-center space-y-3">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-rose-200/80 shadow-xs text-rose-700 text-xs font-bold">
-              <Sparkles className="w-3.5 h-3.5 fill-rose-600 text-rose-600" />
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white dark:bg-slate-900 border border-rose-200/80 dark:border-rose-900/60 shadow-xs text-rose-700 dark:text-rose-400 text-xs font-bold">
+              <Sparkles className="w-3.5 h-3.5 fill-rose-600 dark:fill-rose-500 text-rose-600 dark:text-rose-500" />
               <span>Incredible India • Verified Luxury Hotel Stays</span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
               Find hotels, luxury villas & <br className="hidden sm:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-rose-500 to-amber-600">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-rose-500 to-amber-600 dark:from-rose-400 dark:via-rose-300 dark:to-amber-300">
                 heritage stays across India
               </span>
             </h1>
-            <p className="text-sm sm:text-base text-slate-600 max-w-xl mx-auto">
+            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-xl mx-auto">
               Real-time room availability, guaranteed instant confirmations, and transparent pricing in Indian Rupees (₹).
             </p>
           </div>
@@ -216,7 +216,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* Airbnb Categories Horizontal Bar */}
-      <section className="sticky top-18 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 py-3 shadow-2xs">
+      <section className="sticky top-18 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 py-3 shadow-2xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-6 sm:gap-8 overflow-x-auto scrollbar-none py-1">
             {categories.map((cat) => {
@@ -230,13 +230,13 @@ export const HomePage: React.FC = () => {
                   onClick={() => handleCategorySelect(cat)}
                   className={`flex flex-col items-center gap-1.5 pb-2 transition-all shrink-0 group relative ${
                     isActive
-                      ? 'text-slate-900 font-bold opacity-100'
-                      : 'text-slate-500 hover:text-slate-800 opacity-70 hover:opacity-100'
+                      ? 'text-slate-900 dark:text-white font-bold opacity-100'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 opacity-70 hover:opacity-100'
                   }`}
                 >
                   <div
                     className={`transition-transform duration-200 group-hover:scale-110 ${
-                      isActive ? 'text-rose-600' : 'text-slate-600'
+                      isActive ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-400'
                     }`}
                   >
                     {renderCategoryIcon(cat.iconName, 'w-5 h-5')}
@@ -244,14 +244,14 @@ export const HomePage: React.FC = () => {
                   <div className="flex items-center gap-1">
                     <span className="text-[11px] whitespace-nowrap tracking-tight">{cat.name}</span>
                     {cat.badge && (
-                      <span className="text-[8px] font-extrabold px-1.5 py-0.2 rounded-full bg-rose-50 text-rose-700 border border-rose-200/60 uppercase">
+                      <span className="text-[8px] font-extrabold px-1.5 py-0.2 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/60 uppercase">
                         {cat.badge}
                       </span>
                     )}
                   </div>
                   {/* Airbnb Underline Bar */}
                   {isActive && (
-                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-slate-900 rounded-full animate-in fade-in" />
+                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-slate-900 dark:bg-rose-500 rounded-full animate-in fade-in" />
                   )}
                 </button>
               );
@@ -265,13 +265,13 @@ export const HomePage: React.FC = () => {
         {/* City Filter Pills & Results Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
               <span>Stays in {selectedCity}</span>
-              <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">
+              <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                 {isLoading ? 'Searching...' : `${totalHotelsCount} properties available`}
               </span>
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Live room rates and inventory fetched directly from Spring Boot backend
             </p>
           </div>
@@ -284,8 +284,8 @@ export const HomePage: React.FC = () => {
                 onClick={() => setSelectedCity(city)}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
                   selectedCity.toLowerCase() === city.toLowerCase()
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/60'
                 }`}
               >
                 {city}
@@ -302,12 +302,12 @@ export const HomePage: React.FC = () => {
             ))}
           </div>
         ) : errorMsg ? (
-          <div className="p-8 rounded-3xl bg-amber-50/80 border border-amber-200 text-center space-y-3">
-            <h3 className="font-bold text-amber-900 text-base">Backend Connection Notice</h3>
-            <p className="text-xs text-amber-800 max-w-md mx-auto">{errorMsg}</p>
+          <div className="p-8 rounded-3xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-center space-y-3">
+            <h3 className="font-bold text-amber-900 dark:text-amber-300 text-base">Backend Connection Notice</h3>
+            <p className="text-xs text-amber-800 dark:text-amber-400 max-w-md mx-auto">{errorMsg}</p>
             <button
               onClick={() => loadHotels(selectedCity)}
-              className="px-4 py-2 bg-amber-800 text-white text-xs font-semibold rounded-xl hover:bg-amber-900 transition-colors"
+              className="px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white text-xs font-semibold rounded-xl transition-colors"
             >
               Retry Live Query
             </button>
@@ -333,13 +333,13 @@ export const HomePage: React.FC = () => {
 
         {/* Airbnb Curated Indian Destinations Showcase */}
         {regions.length > 0 && (
-          <section id="homepage-curated-regions" className="pt-8 border-t border-slate-100 space-y-6">
+          <section id="homepage-curated-regions" className="pt-8 border-t border-slate-100 dark:border-slate-800 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
                   Explore Top Indian Travel Regions
                 </h2>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   From Goa's tropical palms to Rajasthan's imperial forts
                 </p>
               </div>
@@ -392,7 +392,7 @@ export const HomePage: React.FC = () => {
         )}
 
         {/* Airbnb Trust & Features Section */}
-        <section className="p-8 sm:p-10 rounded-3xl bg-slate-900 text-white space-y-8">
+        <section className="p-8 sm:p-10 rounded-3xl bg-slate-900 dark:bg-slate-900/90 dark:border dark:border-slate-800 text-white space-y-8">
           <div className="max-w-2xl space-y-2">
             <span className="text-xs font-bold uppercase tracking-wider text-rose-400">
               BookingSuite Assurance

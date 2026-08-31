@@ -214,26 +214,26 @@ export const BookingFlowPage: React.FC = () => {
   const totalCost = selectedRoom ? selectedRoom.basePrice * nights * roomsCount : booking?.amount || 0;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-8 text-slate-900 dark:text-slate-100">
       {/* Step Indicator Header */}
       <div>
         <button
           onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900 mb-4"
+          className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back</span>
         </button>
 
-        <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
               {step === 'INIT_REVIEW' && 'Confirm & Initialize Booking'}
               {step === 'GUESTS' && 'Add Guest Information'}
               {step === 'PAYMENT' && 'Complete Payment'}
               {step === 'CONFIRMATION' && 'Booking Confirmed!'}
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               {hotel?.hotelName} • {hotel?.cityName}
             </p>
           </div>
@@ -245,10 +245,10 @@ export const BookingFlowPage: React.FC = () => {
                 key={s}
                 className={`w-3 h-3 rounded-full transition-all ${
                   step === s
-                    ? 'bg-rose-600 ring-4 ring-rose-100 scale-110'
+                    ? 'bg-rose-600 ring-4 ring-rose-100 dark:ring-rose-950 scale-110'
                     : idx < ['INIT_REVIEW', 'GUESTS', 'PAYMENT', 'CONFIRMATION'].indexOf(step)
                     ? 'bg-emerald-500'
-                    : 'bg-slate-200'
+                    : 'bg-slate-200 dark:bg-slate-700'
                 }`}
               />
             ))}
@@ -262,32 +262,32 @@ export const BookingFlowPage: React.FC = () => {
         <div className="lg:col-span-7 space-y-6">
           {/* STEP 1: INITIALIZE REVIEW */}
           {step === 'INIT_REVIEW' && (
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-              <h3 className="font-bold text-slate-900 text-base">Your Stay Summary</h3>
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">Your Stay Summary</h3>
 
               <div className="space-y-4 text-xs">
-                <div className="flex justify-between py-2 border-b border-slate-100">
-                  <span className="text-slate-500">Dates</span>
-                  <span className="font-semibold text-slate-800">
+                <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
+                  <span className="text-slate-500 dark:text-slate-400">Dates</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
                     {formatDisplayDate(checkInDate)} – {formatDisplayDate(checkOutDate)} ({nights} nights)
                   </span>
                 </div>
 
-                <div className="flex justify-between py-2 border-b border-slate-100">
-                  <span className="text-slate-500">Room Tier</span>
-                  <span className="font-semibold text-slate-800">
+                <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
+                  <span className="text-slate-500 dark:text-slate-400">Room Tier</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
                     {selectedRoom ? getRoomTypeLabel(selectedRoom.roomType) : 'Standard Room'}
                   </span>
                 </div>
 
-                <div className="flex justify-between py-2 border-b border-slate-100">
-                  <span className="text-slate-500">Rooms Reserved</span>
-                  <span className="font-semibold text-slate-800">{roomsCount} Room(s)</span>
+                <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800">
+                  <span className="text-slate-500 dark:text-slate-400">Rooms Reserved</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">{roomsCount} Room(s)</span>
                 </div>
               </div>
 
               {!isAuthenticated && (
-                <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-900 flex items-start gap-2">
+                <div className="p-4 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-300 flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <span>You must be signed in with your BookingSuite account to initialize a booking.</span>
                 </div>
@@ -309,11 +309,11 @@ export const BookingFlowPage: React.FC = () => {
 
           {/* STEP 2: ADD GUESTS */}
           {step === 'GUESTS' && (
-            <form onSubmit={handleSubmitGuests} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+            <form onSubmit={handleSubmitGuests} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">Guest Registration</h3>
-                  <p className="text-xs text-slate-500">
+                  <h3 className="font-bold text-slate-900 dark:text-white text-base">Guest Registration</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     Booking ID: #{booking?.id || booking?.bookingId}
                   </p>
                 </div>
@@ -321,7 +321,7 @@ export const BookingFlowPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleAddGuestRow}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 px-3 py-1.5 rounded-xl transition-colors"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-rose-700 bg-rose-50 dark:bg-rose-950/50 px-3 py-1.5 rounded-xl transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Add Another Guest</span>
@@ -332,10 +332,10 @@ export const BookingFlowPage: React.FC = () => {
                 {guests.map((g, idx) => (
                   <div
                     key={idx}
-                    className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3"
+                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 space-y-3"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800">Guest #{idx + 1}</span>
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Guest #{idx + 1}</span>
                       {guests.length > 1 && (
                         <button
                           type="button"
@@ -349,7 +349,7 @@ export const BookingFlowPage: React.FC = () => {
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                       <div className="sm:col-span-1">
-                        <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
                           Full Name *
                         </label>
                         <input
@@ -358,18 +358,18 @@ export const BookingFlowPage: React.FC = () => {
                           onChange={(e) => handleGuestChange(idx, 'name', e.target.value)}
                           placeholder="e.g. Jane Doe"
                           required
-                          className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 text-xs"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 text-xs text-slate-900 dark:text-slate-100"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
                           Gender
                         </label>
                         <select
                           value={g.gender}
                           onChange={(e) => handleGuestChange(idx, 'gender', e.target.value)}
-                          className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 text-xs"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 text-xs text-slate-900 dark:text-slate-100"
                         >
                           <option value="MALE">Male</option>
                           <option value="FEMALE">Female</option>
@@ -378,7 +378,7 @@ export const BookingFlowPage: React.FC = () => {
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                        <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
                           Age
                         </label>
                         <input
@@ -388,7 +388,7 @@ export const BookingFlowPage: React.FC = () => {
                           value={g.age}
                           onChange={(e) => handleGuestChange(idx, 'age', Number(e.target.value))}
                           required
-                          className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 text-xs"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 text-xs text-slate-900 dark:text-slate-100"
                         />
                       </div>
                     </div>
@@ -412,26 +412,26 @@ export const BookingFlowPage: React.FC = () => {
 
           {/* STEP 3: PAYMENT */}
           {step === 'PAYMENT' && (
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">Payment Initiation</h3>
-                  <p className="text-xs text-slate-500">
+                  <h3 className="font-bold text-slate-900 dark:text-white text-base">Payment Initiation</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     Booking #{booking?.id || booking?.bookingId}
                   </p>
                 </div>
                 <StatusBadge status={booking?.bookingStatus || 'PAYMENTS_PENDING'} />
               </div>
 
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-3">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-600">Total Payable Amount:</span>
-                  <span className="font-extrabold text-base text-slate-900">
+                  <span className="text-slate-600 dark:text-slate-400">Total Payable Amount:</span>
+                  <span className="font-extrabold text-base text-slate-900 dark:text-white">
                     {formatCurrency(booking?.amount || booking?.totalAmount || totalCost)}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <Lock className="w-4 h-4 text-emerald-600" />
+                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                  <Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span>Secure 256-bit encrypted Spring Boot Stripe payment processing.</span>
                 </div>
               </div>
@@ -455,48 +455,48 @@ export const BookingFlowPage: React.FC = () => {
 
           {/* STEP 4: CONFIRMATION */}
           {step === 'CONFIRMATION' && (
-            <div className="bg-white p-8 rounded-3xl border border-emerald-200 shadow-sm space-y-6 text-center">
-              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-emerald-200 dark:border-emerald-800 shadow-sm space-y-6 text-center">
+              <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-10 h-10 stroke-[2.5]" />
               </div>
 
               <div>
-                <h3 className="text-2xl font-bold text-slate-900">Booking Confirmed!</h3>
-                <p className="text-xs text-slate-500 mt-1">
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Booking Confirmed!</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   Your reservation reference is{' '}
-                  <strong className="font-mono text-slate-900 font-bold">
+                  <strong className="font-mono text-slate-900 dark:text-white font-bold">
                     #{booking?.id || booking?.bookingId}
                   </strong>
                 </p>
               </div>
 
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 text-left text-xs space-y-2">
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 text-left text-xs space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Status</span>
+                  <span className="text-slate-500 dark:text-slate-400">Status</span>
                   <StatusBadge status={booking?.bookingStatus || 'CONFIRMED'} />
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Hotel</span>
-                  <span className="font-semibold text-slate-800">{hotel?.hotelName}</span>
+                  <span className="text-slate-500 dark:text-slate-400">Hotel</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">{hotel?.hotelName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Check-in</span>
-                  <span className="font-semibold text-slate-800">{formatDisplayDate(checkInDate)}</span>
+                  <span className="text-slate-500 dark:text-slate-400">Check-in</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">{formatDisplayDate(checkInDate)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Check-out</span>
-                  <span className="font-semibold text-slate-800">{formatDisplayDate(checkOutDate)}</span>
+                  <span className="text-slate-500 dark:text-slate-400">Check-out</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">{formatDisplayDate(checkOutDate)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Total Paid</span>
-                  <span className="font-bold text-slate-900">{formatCurrency(booking?.amount || totalCost)}</span>
+                  <span className="text-slate-500 dark:text-slate-400">Total Paid</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{formatCurrency(booking?.amount || totalCost)}</span>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <Link
                   to="/my-bookings"
-                  className="flex-1 py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors"
+                  className="flex-1 py-3 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-xl transition-colors"
                 >
                   View in My Bookings
                 </Link>
@@ -504,7 +504,7 @@ export const BookingFlowPage: React.FC = () => {
                   <button
                     onClick={handleCancelBooking}
                     disabled={isSubmitting}
-                    className="py-3 px-4 border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-semibold rounded-xl transition-colors"
+                    className="py-3 px-4 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-semibold rounded-xl transition-colors"
                   >
                     Cancel Booking
                   </button>
@@ -516,11 +516,11 @@ export const BookingFlowPage: React.FC = () => {
 
         {/* Right Sticky Reservation Details Card */}
         <div className="lg:col-span-5">
-          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-200 space-y-4 sticky top-28">
-            <h3 className="font-bold text-slate-900 text-sm">Reservation Details</h3>
+          <div className="bg-slate-50 dark:bg-slate-900/90 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4 sticky top-28">
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm">Reservation Details</h3>
 
             <div className="flex gap-3 items-center">
-              <div className="w-16 h-16 rounded-xl bg-slate-200 overflow-hidden shrink-0">
+              <div className="w-16 h-16 rounded-xl bg-slate-200 dark:bg-slate-800 overflow-hidden shrink-0">
                 <img
                   src={
                     hotel?.photos?.[0] ||
@@ -531,36 +531,36 @@ export const BookingFlowPage: React.FC = () => {
                 />
               </div>
               <div className="min-w-0">
-                <h4 className="font-bold text-slate-900 text-xs truncate">{hotel?.hotelName}</h4>
-                <p className="text-[11px] text-slate-500">{hotel?.cityName}</p>
-                <p className="text-[11px] text-rose-600 font-semibold mt-0.5">
+                <h4 className="font-bold text-slate-900 dark:text-white text-xs truncate">{hotel?.hotelName}</h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">{hotel?.cityName}</p>
+                <p className="text-[11px] text-rose-600 dark:text-rose-400 font-semibold mt-0.5">
                   {selectedRoom ? getRoomTypeLabel(selectedRoom.roomType) : 'Standard Room'}
                 </p>
               </div>
             </div>
 
-            <div className="border-t border-slate-200 pt-3 space-y-2 text-xs text-slate-600">
+            <div className="border-t border-slate-200 dark:border-slate-800 pt-3 space-y-2 text-xs text-slate-600 dark:text-slate-400">
               <div className="flex justify-between">
                 <span>Check-in</span>
-                <span className="font-semibold text-slate-800">{formatDisplayDate(checkInDate)}</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{formatDisplayDate(checkInDate)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Check-out</span>
-                <span className="font-semibold text-slate-800">{formatDisplayDate(checkOutDate)}</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{formatDisplayDate(checkOutDate)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Duration</span>
-                <span className="font-semibold text-slate-800">{nights} Night(s)</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{nights} Night(s)</span>
               </div>
               <div className="flex justify-between">
                 <span>Units</span>
-                <span className="font-semibold text-slate-800">{roomsCount} Room(s)</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{roomsCount} Room(s)</span>
               </div>
             </div>
 
-            <div className="border-t border-slate-200 pt-3 flex justify-between items-baseline">
-              <span className="font-bold text-slate-900 text-sm">Total</span>
-              <span className="font-black text-lg text-slate-900">
+            <div className="border-t border-slate-200 dark:border-slate-800 pt-3 flex justify-between items-baseline">
+              <span className="font-bold text-slate-900 dark:text-white text-sm">Total</span>
+              <span className="font-black text-lg text-slate-900 dark:text-white">
                 {formatCurrency(totalCost)}
               </span>
             </div>

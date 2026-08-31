@@ -65,18 +65,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-            <button
-              onClick={() => switchSimulatedRole('HOTEL_MANAGER')}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
-            >
-              <UserCheck className="w-4 h-4" />
-              <span>Enable Hotel Manager Role</span>
-            </button>
             <Link
               to="/"
+              className="w-full sm:w-auto px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition-colors text-center shadow-xs"
+            >
+              Return to Home Stays
+            </Link>
+            <Link
+              to="/settings"
               className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors text-center"
             >
-              Return Home
+              Account Settings
             </Link>
           </div>
         </div>

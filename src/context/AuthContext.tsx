@@ -344,6 +344,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const switchSimulatedRole = (newRole: Role) => {
     const normalized = normalizeRole(newRole);
+
+    // Only privileged management roles are allowed in the role switcher
+    const allowedSwitchRoles: Role[] = ['HOTEL_MANAGER', 'ADMIN', 'OWNER'];
+    if (!allowedSwitchRoles.includes(normalized)) {
+      toastError('Unauthorized Role', 'GUEST role cannot be switched into or assigned via role switcher.');
+      return;
+    }
+
     localStorage.setItem('bookingsuite_active_role', normalized);
 
     if (user) {
