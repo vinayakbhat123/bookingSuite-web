@@ -96,17 +96,17 @@ export const LoginPage: React.FC = () => {
   const handleOAuthLogin = (provider: 'google' | 'github') => {
     setOauthLoading(provider);
     const backendServerRoot = baseUrl.replace(/\/api\/v1\/?$/, '');
-    const oauthEndpoint = `${backendServerRoot}/api/v1/oauth2/authorization/${provider}`;
+    const oauthEndpoint = `${backendServerRoot}/oauth2/authorization/${provider}`;
 
     toastInfo(
       `${provider === 'google' ? 'Google' : 'GitHub'} OAuth2`,
-      `Connecting to Spring Boot OAuth2 endpoint: ${oauthEndpoint}`
+      `Redirecting to Spring Security OAuth2 endpoint: ${oauthEndpoint}`
     );
 
     // Attempt to redirect to Spring Boot OAuth2 authorization endpoint
     setTimeout(() => {
       window.location.href = oauthEndpoint;
-    }, 400);
+    }, 300);
   };
 
   return (

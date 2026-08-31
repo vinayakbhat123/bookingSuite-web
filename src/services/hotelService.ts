@@ -9,8 +9,6 @@ import {
   RoomResponse,
 } from '../types/api';
 
-const LOCAL_HOTELS_KEY = 'bookingsuite_cached_hotels';
-
 export function normalizeHotelResponse(raw: any): HotelResponse {
   if (!raw) {
     return {
@@ -160,22 +158,6 @@ export function normalizeRoomResponse(raw: any, fallbackHotelId = 0): RoomRespon
   };
 }
 
-function getLocalCachedHotels(): HotelResponse[] {
-  try {
-    const raw = localStorage.getItem(LOCAL_HOTELS_KEY);
-    return raw ? JSON.parse(raw).map(normalizeHotelResponse) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveLocalCachedHotels(hotels: HotelResponse[]) {
-  try {
-    localStorage.setItem(LOCAL_HOTELS_KEY, JSON.stringify(hotels));
-    window.dispatchEvent(new CustomEvent('bookingsuite_hotels_updated'));
-  } catch {}
-}
-
 export const hotelService = {
   /**
    * POST /hotels/search
@@ -183,14 +165,13 @@ export const hotelService = {
    * Returns paginated hotel results containing hotel ID, hotel name, city name, and price.
    */
   async searchHotels(data: HotelSearchRequest): Promise<PageHotelPriceDto> {
-    let backendResult: PageHotelPriceDto | null = null;
     try {
       const res = await apiClient.post<any, any>('/hotels/search', data);
       const rawContent = res?.content ?? (res as any)?.data?.content ?? (Array.isArray(res) ? res : (Array.isArray((res as any)?.data) ? (res as any).data : null));
       
       if (Array.isArray(rawContent)) {
         const normalizedContent = rawContent.map((item) => normalizeHotelPriceDto(item));
-        backendResult = {
+        return {
           content: normalizedContent,
           totalElements: res?.totalElements ?? res?.total ?? normalizedContent.length,
           totalPages: res?.totalPages ?? (Math.ceil(normalizedContent.length / (data.pageSize || 10)) || 1),
@@ -202,61 +183,41 @@ export const hotelService = {
           empty: normalizedContent.length === 0,
         };
       }
-    } catch (err) {
-      console.warn('Backend /hotels/search query failed, falling back to hotel catalog:', err);
-    }
-
-    // If backend search returned non-empty results, merge and return
-    if (backendResult && backendResult.content && backendResult.content.length > 0) {
-      return backendResult;
-    }
-
-    // Fallback: Query all hotels from /admin/hotels or cache and filter
-    try {
-      const allHotels = await this.getAdminHotels();
-      const cityQuery = data.city?.trim().toLowerCase() || '';
-
-      const matchedHotels = allHotels.filter((h) => {
-        if (!cityQuery) return true;
-        const hotelCity = h.cityName?.toLowerCase() || '';
-        const hotelName = h.hotelName?.toLowerCase() || '';
-        return hotelCity.includes(cityQuery) || cityQuery.includes(hotelCity) || hotelName.includes(cityQuery);
-      });
-
-      const itemsToUse = matchedHotels.length > 0 ? matchedHotels : allHotels;
-      const pageNumber = data.pageNumber || 0;
-      const pageSize = data.pageSize || 10;
-      const startIndex = pageNumber * pageSize;
-      const paged = itemsToUse.slice(startIndex, startIndex + pageSize);
-
-      const mappedContent: HotelPriceDto[] = paged.map((h) =>
-        normalizeHotelPriceDto(h, 2800 + ((h.id * 350) % 4500))
-      );
-
-      return {
-        content: mappedContent,
-        totalElements: itemsToUse.length,
-        totalPages: Math.ceil(itemsToUse.length / pageSize) || 1,
-        last: startIndex + pageSize >= itemsToUse.length,
-        size: pageSize,
-        number: pageNumber,
-        first: pageNumber === 0,
-        numberOfElements: mappedContent.length,
-        empty: mappedContent.length === 0,
-      };
     } catch {
-      return {
-        content: [],
-        totalElements: 0,
-        totalPages: 0,
-        last: true,
-        size: data.pageSize || 10,
-        number: 0,
-        first: true,
-        numberOfElements: 0,
-        empty: true,
-      };
+      // If backend search endpoint is not available or returns empty, query catalogue
     }
+
+    const allHotels = await this.getAdminHotels();
+    const cityQuery = data.city?.trim().toLowerCase() || '';
+
+    const matchedHotels = allHotels.filter((h) => {
+      if (!cityQuery) return true;
+      const hotelCity = h.cityName?.toLowerCase() || '';
+      const hotelName = h.hotelName?.toLowerCase() || '';
+      return hotelCity.includes(cityQuery) || cityQuery.includes(hotelCity) || hotelName.includes(cityQuery);
+    });
+
+    const itemsToUse = matchedHotels.length > 0 ? matchedHotels : allHotels;
+    const pageNumber = data.pageNumber || 0;
+    const pageSize = data.pageSize || 10;
+    const startIndex = pageNumber * pageSize;
+    const paged = itemsToUse.slice(startIndex, startIndex + pageSize);
+
+    const mappedContent: HotelPriceDto[] = paged.map((h) =>
+      normalizeHotelPriceDto(h, 2800 + ((h.id * 350) % 4500))
+    );
+
+    return {
+      content: mappedContent,
+      totalElements: itemsToUse.length,
+      totalPages: Math.ceil(itemsToUse.length / pageSize) || 1,
+      last: startIndex + pageSize >= itemsToUse.length,
+      size: pageSize,
+      number: pageNumber,
+      first: pageNumber === 0,
+      numberOfElements: mappedContent.length,
+      empty: mappedContent.length === 0,
+    };
   },
 
   /**
@@ -267,7 +228,6 @@ export const hotelService = {
     try {
       const res = await apiClient.get<any, any>(`/hotels/${hotelId}/info`);
       if (res) {
-        // Case 1: Wrapped { hotel: HotelResponse, rooms: RoomResponse[] }
         if (res.hotel) {
           const hotel = normalizeHotelResponse(res.hotel);
           const rooms = Array.isArray(res.rooms)
@@ -276,7 +236,6 @@ export const hotelService = {
           return { hotel, rooms };
         }
 
-        // Case 2: Wrapped { data: { hotel, rooms } }
         if (res.data?.hotel) {
           const hotel = normalizeHotelResponse(res.data.hotel);
           const rooms = Array.isArray(res.data.rooms)
@@ -285,7 +244,6 @@ export const hotelService = {
           return { hotel, rooms };
         }
 
-        // Case 3: Flat { id, hotelName, cityName, ..., rooms: [...] }
         if (res.id || res.hotelId || res.hotelName || res.name) {
           const hotel = normalizeHotelResponse(res);
           const rooms = Array.isArray(res.rooms)
@@ -294,11 +252,10 @@ export const hotelService = {
           return { hotel, rooms };
         }
       }
-    } catch (err) {
-      console.warn(`/hotels/${hotelId}/info endpoint failed, querying admin fallback:`, err);
+    } catch {
+      // Fallback: Query admin hotel + room endpoints
     }
 
-    // Fallback: Query admin endpoints
     const hotel = await this.getAdminHotelById(hotelId);
     let rooms: RoomResponse[] = [];
     try {
@@ -308,32 +265,7 @@ export const hotelService = {
         : (Array.isArray(roomRes?.content) ? roomRes.content : (Array.isArray(roomRes?.data) ? roomRes.data : []));
       rooms = rawRooms.map((r: any) => normalizeRoomResponse(r, hotelId));
     } catch {
-      rooms = [
-        {
-          id: hotelId * 100 + 1,
-          hotelId,
-          roomType: 'DELUXE',
-          basePrice: 3400,
-          totalCount: 10,
-          capacity: 2,
-          floor: 3,
-          photos: hotel.photos && hotel.photos.length > 0 ? hotel.photos : [],
-          amenities: ['WIFI', 'AIR_CONDITIONING', 'QUEEN_BED', 'CITY_VIEW'],
-          roomStatus: 'AVAILABLE',
-        },
-        {
-          id: hotelId * 100 + 2,
-          hotelId,
-          roomType: 'EXECUTIVE_SUITE',
-          basePrice: 5200,
-          totalCount: 5,
-          capacity: 4,
-          floor: 8,
-          photos: hotel.photos && hotel.photos.length > 1 ? [hotel.photos[1]] : [],
-          amenities: ['WIFI', 'KING_BED', 'BALCONY', 'BATHTUB', 'MINIBAR'],
-          roomStatus: 'AVAILABLE',
-        },
-      ];
+      rooms = [];
     }
 
     return {
@@ -344,50 +276,25 @@ export const hotelService = {
 
   /**
    * GET /admin/hotels
-   * List all hotels for admin/manager
+   * List all hotels for admin/manager/catalog directly from backend
    */
   async getAdminHotels(): Promise<HotelResponse[]> {
-    let serverHotels: HotelResponse[] = [];
-    try {
-      const res = await apiClient.get<any, any>('/admin/hotels');
-      let rawList: any[] = [];
-      if (Array.isArray(res)) {
-        rawList = res;
-      } else if (Array.isArray(res?.content)) {
-        rawList = res.content;
-      } else if (Array.isArray(res?.hotels)) {
-        rawList = res.hotels;
-      } else if (Array.isArray(res?.data)) {
-        rawList = res.data;
-      } else if (Array.isArray(res?.data?.content)) {
-        rawList = res.data.content;
-      }
-      serverHotels = rawList.map(normalizeHotelResponse);
-    } catch (err) {
-      console.warn('Backend /admin/hotels request failed, using cached catalogue:', err);
+    const res = await apiClient.get<any, any>('/admin/hotels');
+    let rawList: any[] = [];
+    if (Array.isArray(res)) {
+      rawList = res;
+    } else if (Array.isArray(res?.content)) {
+      rawList = res.content;
+    } else if (Array.isArray(res?.data)) {
+      rawList = res.data;
+    } else if (Array.isArray(res?.hotels)) {
+      rawList = res.hotels;
+    } else if (Array.isArray(res?.data?.content)) {
+      rawList = res.data.content;
+    } else if (res && typeof res === 'object' && (res.id || res.hotelName || res.name)) {
+      rawList = [res];
     }
-
-    // Merge server hotels with locally added hotels
-    const cached = getLocalCachedHotels();
-    const mergedMap = new Map<number, HotelResponse>();
-
-    // Add server hotels first
-    serverHotels.forEach((h) => {
-      if (h && h.id) mergedMap.set(h.id, h);
-    });
-
-    // Merge cached hotels if not already present
-    cached.forEach((h) => {
-      if (h && h.id && !mergedMap.has(h.id)) {
-        mergedMap.set(h.id, h);
-      }
-    });
-
-    const result = Array.from(mergedMap.values());
-    if (serverHotels.length > 0) {
-      saveLocalCachedHotels(result);
-    }
-    return result;
+    return rawList.map(normalizeHotelResponse);
   },
 
   /**
@@ -395,40 +302,9 @@ export const hotelService = {
    * Create a new hotel
    */
   async createAdminHotel(data: HotelRequest): Promise<HotelResponse> {
-    let createdHotel: HotelResponse | null = null;
-    try {
-      const res = await apiClient.post<any, any>('/admin/hotels', data);
-      const raw = res?.data || res;
-      if (raw && (raw.id || raw.hotelId || raw.hotelName || raw.name)) {
-        createdHotel = normalizeHotelResponse(raw);
-      }
-    } catch (err) {
-      console.warn('Backend createAdminHotel failed or returned non-standard response:', err);
-    }
-
-    if (!createdHotel) {
-      createdHotel = {
-        id: Date.now(),
-        hotelName: data.hotelName,
-        cityName: data.cityName,
-        photos: data.photos || ['https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800'],
-        amenities: data.amenities || ['WIFI', 'SWIMMING_POOL', 'FITNESS_CENTER', 'RESTAURANT'],
-        contactInfo: data.contactInfo || {
-          address: '',
-          phoneNumber: '',
-          email: '',
-          location: '',
-        },
-        active: data.active !== false,
-      };
-    }
-
-    // Update local cache and notify listeners
-    const cached = getLocalCachedHotels();
-    const updated = [createdHotel, ...cached.filter((h) => h.id !== createdHotel!.id)];
-    saveLocalCachedHotels(updated);
-
-    return createdHotel;
+    const res = await apiClient.post<any, any>('/admin/hotels', data);
+    const raw = res?.data || res;
+    return normalizeHotelResponse(raw || data);
   },
 
   /**
@@ -436,20 +312,9 @@ export const hotelService = {
    * Get single hotel details by ID
    */
   async getAdminHotelById(id: number): Promise<HotelResponse> {
-    try {
-      const res = await apiClient.get<any, any>(`/admin/hotels/${id}`);
-      const raw = res?.data || res;
-      if (raw && (raw.id || raw.hotelId || raw.hotelName || raw.name)) {
-        return normalizeHotelResponse(raw);
-      }
-    } catch (err) {
-      console.warn(`/admin/hotels/${id} failed, checking cache:`, err);
-    }
-
-    const cached = getLocalCachedHotels().find((h) => h.id === Number(id));
-    if (cached) return cached;
-
-    throw new Error(`Hotel #${id} not found.`);
+    const res = await apiClient.get<any, any>(`/admin/hotels/${id}`);
+    const raw = res?.data || res;
+    return normalizeHotelResponse(raw);
   },
 
   /**
@@ -457,39 +322,9 @@ export const hotelService = {
    * Update hotel details
    */
   async updateAdminHotel(id: number, data: HotelRequest): Promise<HotelResponse> {
-    let updatedHotel: HotelResponse | null = null;
-    try {
-      const res = await apiClient.put<any, any>(`/admin/hotels/${id}`, data);
-      const raw = res?.data || res;
-      if (raw && (raw.id || raw.hotelId || raw.hotelName || raw.name)) {
-        updatedHotel = normalizeHotelResponse(raw);
-      }
-    } catch (err) {
-      console.warn('Backend updateAdminHotel failed:', err);
-    }
-
-    if (!updatedHotel) {
-      updatedHotel = {
-        id,
-        hotelName: data.hotelName,
-        cityName: data.cityName,
-        photos: data.photos || [],
-        amenities: data.amenities || [],
-        contactInfo: data.contactInfo || {
-          address: '',
-          phoneNumber: '',
-          email: '',
-          location: '',
-        },
-        active: data.active !== false,
-      };
-    }
-
-    const cached = getLocalCachedHotels();
-    const nextCached = cached.map((h) => (h.id === id ? updatedHotel! : h));
-    saveLocalCachedHotels(nextCached);
-
-    return updatedHotel;
+    const res = await apiClient.put<any, any>(`/admin/hotels/${id}`, data);
+    const raw = res?.data || res;
+    return normalizeHotelResponse(raw || { id, ...data });
   },
 
   /**
@@ -497,14 +332,7 @@ export const hotelService = {
    * Delete hotel by ID
    */
   async deleteAdminHotel(id: number): Promise<void> {
-    try {
-      await apiClient.delete(`/admin/hotels/${id}`);
-    } catch (err) {
-      console.warn(`Backend delete /admin/hotels/${id} failed:`, err);
-    }
-
-    const cached = getLocalCachedHotels();
-    saveLocalCachedHotels(cached.filter((h) => h.id !== id));
+    await apiClient.delete(`/admin/hotels/${id}`);
   },
 
   /**
@@ -512,15 +340,8 @@ export const hotelService = {
    * Activate hotel (one-time activation)
    */
   async activateHotel(id: number): Promise<HotelResponse | void> {
-    try {
-      const res = await apiClient.patch<any, any>(`/admin/hotels/${id}/activate`);
-      const cached = getLocalCachedHotels();
-      saveLocalCachedHotels(cached.map((h) => (h.id === id ? { ...h, active: true } : h)));
-      return res ? normalizeHotelResponse(res?.data || res) : undefined;
-    } catch {
-      const cached = getLocalCachedHotels();
-      saveLocalCachedHotels(cached.map((h) => (h.id === id ? { ...h, active: true } : h)));
-    }
+    const res = await apiClient.patch<any, any>(`/admin/hotels/${id}/activate`);
+    return res ? normalizeHotelResponse(res?.data || res) : undefined;
   },
 
   /**
@@ -528,15 +349,8 @@ export const hotelService = {
    * Deactivate hotel
    */
   async deactivateHotel(id: number): Promise<HotelResponse | void> {
-    try {
-      const res = await apiClient.patch<any, any>(`/admin/hotels/${id}/deactivate`);
-      const cached = getLocalCachedHotels();
-      saveLocalCachedHotels(cached.map((h) => (h.id === id ? { ...h, active: false } : h)));
-      return res ? normalizeHotelResponse(res?.data || res) : undefined;
-    } catch {
-      const cached = getLocalCachedHotels();
-      saveLocalCachedHotels(cached.map((h) => (h.id === id ? { ...h, active: false } : h)));
-    }
+    const res = await apiClient.patch<any, any>(`/admin/hotels/${id}/deactivate`);
+    return res ? normalizeHotelResponse(res?.data || res) : undefined;
   },
 
   /**
@@ -544,22 +358,22 @@ export const hotelService = {
    * Get hotels belonging to the current owner/manager
    */
   async getOwnerHotels(): Promise<HotelResponse[]> {
-    try {
-      const res = await apiClient.get<any, any>('/admin/hotels/owner');
-      let rawList: any[] = [];
-      if (Array.isArray(res)) rawList = res;
-      else if (Array.isArray(res?.content)) rawList = res.content;
-      else if (Array.isArray(res?.hotels)) rawList = res.hotels;
-      else if (Array.isArray(res?.data)) rawList = res.data;
-      else if (Array.isArray(res?.data?.content)) rawList = res.data.content;
-      
-      if (rawList.length > 0) {
-        return rawList.map(normalizeHotelResponse);
-      }
-    } catch (err) {
-      console.warn('Backend /admin/hotels/owner request failed:', err);
+    const res = await apiClient.get<any, any>('/admin/hotels/owner');
+    let rawList: any[] = [];
+    if (Array.isArray(res)) {
+      rawList = res;
+    } else if (Array.isArray(res?.content)) {
+      rawList = res.content;
+    } else if (Array.isArray(res?.data)) {
+      rawList = res.data;
+    } else if (Array.isArray(res?.hotels)) {
+      rawList = res.hotels;
+    } else if (Array.isArray(res?.data?.content)) {
+      rawList = res.data.content;
+    } else if (res && typeof res === 'object' && (res.id || res.hotelName || res.name)) {
+      rawList = [res];
     }
-    return this.getAdminHotels();
+    return rawList.map(normalizeHotelResponse);
   },
 };
 

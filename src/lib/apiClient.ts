@@ -189,11 +189,20 @@ apiClient.interceptors.response.use(
           );
 
           let newAccessToken = '';
-          const responseData = refreshRes.data;
-          if ('data' in responseData && responseData.data?.AccessToken) {
+          const responseData = refreshRes.data as any;
+          if (responseData?.data?.AccessToken) {
             newAccessToken = responseData.data.AccessToken;
-          } else if ('AccessToken' in responseData) {
-            newAccessToken = (responseData as LoginResponse).AccessToken;
+          } else if (responseData?.data?.accessToken) {
+            newAccessToken = responseData.data.accessToken;
+          } else if (responseData?.AccessToken) {
+            newAccessToken = responseData.AccessToken;
+          } else if (responseData?.accessToken) {
+            newAccessToken = responseData.accessToken;
+          }
+
+          const newRefreshToken = responseData?.data?.refreshToken || responseData?.data?.RefreshToken || responseData?.refreshToken || responseData?.RefreshToken;
+          if (newRefreshToken) {
+            setRefreshToken(newRefreshToken);
           }
 
           if (newAccessToken) {
