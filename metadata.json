@@ -1,0 +1,6 @@
+{
+  "name": "BookingSuite",
+  "description": "Airbnb-inspired hotel booking platform with full guest search, room booking, guest management, and hotel manager dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
