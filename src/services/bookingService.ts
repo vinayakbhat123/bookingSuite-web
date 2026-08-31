@@ -1,53 +1,50 @@
-import { apiClient } from '../lib/apiClient';
+import { bookingsApi } from '../api';
 import { BookingRequest, BookingResponse, GuestRequest } from '../types/api';
 
 export const bookingService = {
   /**
-   * POST /bookings/init
-   * Initialize a booking with hotelId, roomId, checkInDate, checkOutDate, roomsCount
+   * 1) POST /bookings/init
    */
   async initBooking(data: BookingRequest): Promise<BookingResponse> {
-    const res = await apiClient.post<any, BookingResponse>('/bookings/init', data);
-    return res;
+    return bookingsApi.initBooking(data);
   },
 
   /**
-   * POST /bookings/{bookingId}/addGuests
-   * Add guest information array to an existing booking
+   * 2) POST /bookings/{bookingId}/addGuests
    */
   async addGuests(bookingId: number, guests: GuestRequest[]): Promise<BookingResponse> {
-    const res = await apiClient.post<any, BookingResponse>(`/bookings/${bookingId}/addGuests`, guests);
-    return res;
+    return bookingsApi.addGuests(bookingId, guests);
   },
 
   /**
-   * POST /bookings/{bookingId}/cancel
-   * Cancel an existing booking
+   * 3) POST /bookings/{bookingId}/payments
+   */
+  async initiatePayment(bookingId: number): Promise<{ paymentUrl?: string; sessionUrl?: string; [key: string]: any }> {
+    return bookingsApi.initiatePayment(bookingId);
+  },
+
+  /**
+   * 4) POST /bookings/{bookingId}/cancel
    */
   async cancelBooking(bookingId: number): Promise<BookingResponse> {
-    const res = await apiClient.post<any, BookingResponse>(`/bookings/${bookingId}/cancel`);
-    return res;
+    return bookingsApi.cancelBooking(bookingId);
   },
 
   /**
    * GET /users/mybookings
-   * Retrieve all bookings for current authenticated user
    */
   async getMyBookings(): Promise<BookingResponse[]> {
-    const res = await apiClient.get<any, BookingResponse[]>('/users/mybookings');
-    return Array.isArray(res) ? res : (res as any)?.content || [];
+    return bookingsApi.getMyBookings();
   },
 
   /**
    * GET /admin/hotels/{hotelId}/bookings
-   * Retrieve all bookings for a specific hotel (for managers/admins)
    */
   async getAdminHotelBookings(hotelId: number): Promise<BookingResponse[]> {
-    const res = await apiClient.get<any, BookingResponse[]>(`/admin/hotels/${hotelId}/bookings`);
-    return Array.isArray(res) ? res : (res as any)?.content || [];
+    return bookingsApi.getHotelBookings(hotelId);
   },
 
   async getHotelBookings(hotelId: number): Promise<BookingResponse[]> {
-    return this.getAdminHotelBookings(hotelId);
+    return bookingsApi.getHotelBookings(hotelId);
   },
 };

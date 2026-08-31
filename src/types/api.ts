@@ -27,6 +27,7 @@ export type RoomStatus =
   | 'MAINTENANCE'
   | 'OUT_OF_SERVICE';
 
+// Standard Backend Response Envelope
 export interface ApiResponse<T = any> {
   success?: boolean;
   message?: string;
@@ -36,14 +37,16 @@ export interface ApiResponse<T = any> {
   status?: number;
 }
 
+// HOTEL CONTRACTS
 export interface HotelContactInfo {
   address: string;
   phoneNumber: string;
   email: string;
-  location?: string;
+  location: string;
 }
 
 export interface HotelRequest {
+  id?: number;
   hotelName: string;
   cityName: string;
   photos: string[];
@@ -64,46 +67,52 @@ export interface HotelResponse {
   updatedAt?: string;
 }
 
+export type Hotel = HotelResponse;
+
+// ROOM CONTRACTS
 export interface RoomRequest {
-  roomType: RoomType;
+  id?: number;
+  roomType: RoomType | string;
   basePrice: number;
   totalCount: number;
+  floor: number;
   capacity: number;
-  floor?: number;
-  roomStatus?: RoomStatus;
-  status?: RoomStatus;
+  status?: RoomStatus | string;
+  roomStatus?: RoomStatus | string;
   photos?: string[];
   amenities?: string[];
 }
 
 export interface RoomResponse {
   id: number;
-  hotelId?: number;
+  hotelId: number;
   roomNumber?: string;
-  roomType: RoomType;
+  roomType: RoomType | string;
   basePrice: number;
   totalCount: number;
+  floor: number;
   capacity: number;
-  floor?: number;
-  roomStatus?: RoomStatus;
-  status?: RoomStatus;
   photos: string[];
   amenities: string[];
+  status?: RoomStatus | string;
+  roomStatus?: RoomStatus | string;
 }
+
+export type Room = RoomResponse;
 
 export interface HotelInfoResponse {
   hotel: HotelResponse;
   rooms: RoomResponse[];
 }
 
+// SEARCH CONTRACTS
 export interface HotelSearchRequest {
   city: string;
   startDate: string; // YYYY-MM-DD
-  endDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
   roomsCount: number;
   pageNumber: number;
   pageSize: number;
-  dateRangeValid?: boolean;
 }
 
 export interface HotelPriceDto {
@@ -117,57 +126,19 @@ export interface HotelPriceDto {
 
 export interface PageHotelPriceDto {
   content: HotelPriceDto[];
-  pageable?: {
-    pageNumber: number;
-    pageSize: number;
-    offset?: number;
-    paged?: boolean;
-    unpaged?: boolean;
-  };
+  pageNumber: number;
+  pageSize: number;
   totalElements: number;
   totalPages: number;
-  last: boolean;
-  size: number;
-  number: number;
-  first: boolean;
-  numberOfElements: number;
-  empty: boolean;
+  last?: boolean;
+  size?: number;
+  number?: number;
+  first?: boolean;
+  numberOfElements?: number;
+  empty?: boolean;
 }
 
-export interface BookingRequest {
-  hotelId: number;
-  roomId: number;
-  checkInDate: string;
-  checkOutDate: string;
-  roomsCount: number;
-}
-
-export interface GuestRequest {
-  name: string;
-  gender: string;
-  age: number;
-}
-
-export interface BookingResponse {
-  id: number;
-  bookingId?: number;
-  hotelId?: number;
-  hotelName?: string;
-  roomId?: number;
-  roomType?: RoomType;
-  checkInDate: string;
-  checkOutDate: string;
-  roomsCount: number;
-  amount?: number;
-  totalAmount?: number;
-  bookingStatus: BookingStatus;
-  guests?: GuestRequest[];
-  createdAt?: string;
-  paymentSessionUrl?: string;
-  hotel?: HotelResponse;
-  room?: RoomResponse;
-}
-
+// INVENTORY CONTRACTS
 export interface InventoryResponse {
   id?: number;
   roomId?: number;
@@ -188,22 +159,64 @@ export type InventoryDto = InventoryResponse;
 export interface UpdateInventoryRequest {
   startDate?: string;
   endDate?: string;
-  date?: string;
-  totalCount?: number;
-  surgeFactor?: number;
   closed?: boolean;
+  surgeFactor?: number;
+  totalCount?: number;
+  date?: string;
+  price?: number;
 }
 
+// REPORT CONTRACTS
 export interface HotelReport {
   TotalBooking?: number;
-  totalBookings?: number;
-  totalBooking?: number;
   TotalRevenue?: number;
-  totalRevenue?: number;
   AverageRevenue?: number;
+  totalBooking?: number;
+  totalBookings?: number;
+  totalRevenue?: number;
   averageRevenue?: number;
 }
 
+// BOOKING CONTRACTS
+export interface GuestRequest {
+  id?: number;
+  name: string;
+  gender: string;
+  age: number;
+}
+
+export interface BookingRequest {
+  hotelId: number;
+  roomId: number;
+  checkInDate: string; // YYYY-MM-DD
+  checkOutDate: string; // YYYY-MM-DD
+  roomsCount: number;
+}
+
+export interface BookingResponse {
+  id: number;
+  bookingId?: number;
+  hotelId?: number;
+  hotelName?: string;
+  roomId?: number;
+  roomType?: RoomType | string;
+  checkInDate: string;
+  checkOutDate: string;
+  roomsCount: number;
+  status: BookingStatus | string;
+  bookingStatus?: BookingStatus | string;
+  guests: GuestRequest[];
+  price?: number;
+  amount?: number;
+  totalAmount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  paymentSessionUrl?: string;
+  hotel?: HotelResponse;
+  room?: RoomResponse;
+}
+
+// USER CONTRACTS
 export interface UserProfileRequest {
   name: string;
   lastName?: string;
@@ -227,11 +240,7 @@ export interface UserResponse {
   createdAt?: string;
 }
 
-export interface LoginRequest {
-  email: string;
-  password?: string;
-}
-
+// AUTH CONTRACTS
 export interface SignupRequest {
   name: string;
   email: string;
@@ -239,8 +248,14 @@ export interface SignupRequest {
   roles?: Role[];
 }
 
+export interface LoginRequest {
+  email: string;
+  password?: string;
+}
+
 export interface LoginResponse {
   AccessToken: string;
+  accessToken?: string;
   refreshToken?: string;
   user?: UserResponse;
   roles?: Role[];

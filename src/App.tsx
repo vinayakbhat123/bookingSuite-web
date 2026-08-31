@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApiIntegrationReportModal } from './components/ApiIntegrationReportModal';
 import { BackendConnectionBanner } from './components/BackendConnectionBanner';
 import { Footer } from './components/Footer';
@@ -27,22 +28,33 @@ import { WishlistPage } from './pages/guest/WishlistPage';
 // Manager Portal
 import { ManagerLayout } from './pages/manager/ManagerLayout';
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 1000 * 60 * 2, // 2 minutes
+    },
+  },
+});
+
 export default function App() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   return (
-    <ApiConfigProvider>
-      <ToastProvider>
-        <AuthProvider>
-          <SettingsProvider>
-            <WishlistProvider>
-              <BrowserRouter>
-                <div className="min-h-screen flex flex-col bg-white text-slate-900 font-sans antialiased selection:bg-rose-500 selection:text-white">
-                  {/* Backend Status Top Bar */}
-                  <BackendConnectionBanner onOpenReport={() => setIsReportModalOpen(true)} />
+    <QueryClientProvider client={queryClient}>
+      <ApiConfigProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <SettingsProvider>
+              <WishlistProvider>
+                <BrowserRouter>
+                  <div className="min-h-screen flex flex-col bg-white text-slate-900 font-sans antialiased selection:bg-rose-500 selection:text-white">
+                    {/* Backend Status Top Bar */}
+                    <BackendConnectionBanner onOpenReport={() => setIsReportModalOpen(true)} />
 
-                  {/* Navigation Header */}
-                  <Navbar onOpenReport={() => setIsReportModalOpen(true)} />
+                    {/* Navigation Header */}
+                    <Navbar onOpenReport={() => setIsReportModalOpen(true)} />
 
                   {/* Main App Content Views */}
                   <div className="flex-1">
@@ -136,6 +148,7 @@ export default function App() {
         </AuthProvider>
       </ToastProvider>
     </ApiConfigProvider>
+  </QueryClientProvider>
   );
 }
 

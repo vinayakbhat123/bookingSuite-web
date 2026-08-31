@@ -1,4 +1,4 @@
-import { apiClient } from '../lib/apiClient';
+import { adminApi, hotelsApi } from '../api';
 import {
   HotelInfoResponse,
   HotelPriceDto,
@@ -9,6 +9,9 @@ import {
   RoomResponse,
 } from '../types/api';
 
+/**
+ * Clean data normalizer for HotelResponse from the backend
+ */
 export function normalizeHotelResponse(raw: any): HotelResponse {
   if (!raw) {
     return {
@@ -28,9 +31,13 @@ export function normalizeHotelResponse(raw: any): HotelResponse {
 
   let photos: string[] = [];
   if (Array.isArray(raw.photos)) {
-    photos = raw.photos.map((p: any) => (typeof p === 'string' ? p : p?.url || p?.photoUrl || '')).filter(Boolean);
+    photos = raw.photos
+      .map((p: any) => (typeof p === 'string' ? p : p?.url || p?.photoUrl || ''))
+      .filter(Boolean);
   } else if (Array.isArray(raw.images)) {
-    photos = raw.images.map((p: any) => (typeof p === 'string' ? p : p?.url || p?.photoUrl || '')).filter(Boolean);
+    photos = raw.images
+      .map((p: any) => (typeof p === 'string' ? p : p?.url || p?.photoUrl || ''))
+      .filter(Boolean);
   } else if (Array.isArray(raw.photoUrls)) {
     photos = raw.photoUrls.filter(Boolean);
   } else if (typeof raw.photos === 'string' && raw.photos.trim()) {
@@ -39,7 +46,9 @@ export function normalizeHotelResponse(raw: any): HotelResponse {
 
   let amenities: string[] = [];
   if (Array.isArray(raw.amenities)) {
-    amenities = raw.amenities.map((a: any) => (typeof a === 'string' ? a : a?.name || a?.amenity || '')).filter(Boolean);
+    amenities = raw.amenities
+      .map((a: any) => (typeof a === 'string' ? a : a?.name || a?.amenity || ''))
+      .filter(Boolean);
   } else if (Array.isArray(raw.amenityList)) {
     amenities = raw.amenityList.filter(Boolean);
   } else if (typeof raw.amenities === 'string' && raw.amenities.trim()) {
@@ -48,14 +57,24 @@ export function normalizeHotelResponse(raw: any): HotelResponse {
 
   const contactInfo = {
     address: raw.contactInfo?.address ?? raw.address ?? '',
-    phoneNumber: raw.contactInfo?.phoneNumber ?? raw.contactInfo?.phone ?? raw.phoneNumber ?? raw.phone ?? '',
+    phoneNumber:
+      raw.contactInfo?.phoneNumber ??
+      raw.contactInfo?.phone ??
+      raw.phoneNumber ??
+      raw.phone ??
+      '',
     email: raw.contactInfo?.email ?? raw.email ?? '',
     location: raw.contactInfo?.location ?? raw.location ?? '',
   };
 
-  const active = raw.active !== undefined
-    ? Boolean(raw.active)
-    : (raw.isActive !== undefined ? Boolean(raw.isActive) : (raw.status === 'INACTIVE' ? false : true));
+  const active =
+    raw.active !== undefined
+      ? Boolean(raw.active)
+      : raw.isActive !== undefined
+      ? Boolean(raw.isActive)
+      : raw.status === 'INACTIVE'
+      ? false
+      : true;
 
   return {
     id,
@@ -65,9 +84,14 @@ export function normalizeHotelResponse(raw: any): HotelResponse {
     amenities,
     contactInfo,
     active,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
   };
 }
 
+/**
+ * Normalizer for Search Result DTOs
+ */
 export function normalizeHotelPriceDto(raw: any): HotelPriceDto {
   const hotelId = Number(raw.hotelId ?? raw.id ?? 0);
   const hotelName = raw.hotelName ?? raw.name ?? raw.title ?? '';
@@ -75,9 +99,13 @@ export function normalizeHotelPriceDto(raw: any): HotelPriceDto {
 
   let photos: string[] = [];
   if (Array.isArray(raw.photos)) {
-    photos = raw.photos.map((p: any) => (typeof p === 'string' ? p : p?.url || '')).filter(Boolean);
+    photos = raw.photos
+      .map((p: any) => (typeof p === 'string' ? p : p?.url || ''))
+      .filter(Boolean);
   } else if (Array.isArray(raw.images)) {
-    photos = raw.images.map((p: any) => (typeof p === 'string' ? p : p?.url || '')).filter(Boolean);
+    photos = raw.images
+      .map((p: any) => (typeof p === 'string' ? p : p?.url || ''))
+      .filter(Boolean);
   } else if (Array.isArray(raw.photoUrls)) {
     photos = raw.photoUrls.filter(Boolean);
   } else if (typeof raw.photos === 'string' && raw.photos.trim()) {
@@ -86,7 +114,9 @@ export function normalizeHotelPriceDto(raw: any): HotelPriceDto {
 
   let amenities: string[] = [];
   if (Array.isArray(raw.amenities)) {
-    amenities = raw.amenities.map((a: any) => (typeof a === 'string' ? a : a?.name || '')).filter(Boolean);
+    amenities = raw.amenities
+      .map((a: any) => (typeof a === 'string' ? a : a?.name || ''))
+      .filter(Boolean);
   } else if (typeof raw.amenities === 'string' && raw.amenities.trim()) {
     amenities = raw.amenities.split(',').map((s: string) => s.trim()).filter(Boolean);
   }
@@ -103,6 +133,9 @@ export function normalizeHotelPriceDto(raw: any): HotelPriceDto {
   };
 }
 
+/**
+ * Normalizer for Room Response DTOs
+ */
 export function normalizeRoomResponse(raw: any, fallbackHotelId = 0): RoomResponse {
   const id = Number(raw.id ?? raw.roomId ?? 0);
   const hotelId = Number(raw.hotelId ?? fallbackHotelId);
@@ -115,14 +148,18 @@ export function normalizeRoomResponse(raw: any, fallbackHotelId = 0): RoomRespon
 
   let photos: string[] = [];
   if (Array.isArray(raw.photos)) {
-    photos = raw.photos.map((p: any) => (typeof p === 'string' ? p : p?.url || '')).filter(Boolean);
+    photos = raw.photos
+      .map((p: any) => (typeof p === 'string' ? p : p?.url || ''))
+      .filter(Boolean);
   } else if (typeof raw.photos === 'string' && raw.photos.trim()) {
     photos = raw.photos.split(',').map((s: string) => s.trim()).filter(Boolean);
   }
 
   let amenities: string[] = [];
   if (Array.isArray(raw.amenities)) {
-    amenities = raw.amenities.map((a: any) => (typeof a === 'string' ? a : a?.name || '')).filter(Boolean);
+    amenities = raw.amenities
+      .map((a: any) => (typeof a === 'string' ? a : a?.name || ''))
+      .filter(Boolean);
   } else if (typeof raw.amenities === 'string' && raw.amenities.trim()) {
     amenities = raw.amenities.split(',').map((s: string) => s.trim()).filter(Boolean);
   }
@@ -141,405 +178,70 @@ export function normalizeRoomResponse(raw: any, fallbackHotelId = 0): RoomRespon
     photos,
     amenities,
     roomStatus,
+    status: roomStatus,
   };
 }
 
 export const hotelService = {
   /**
    * GET /hotels/allhotels
-   * List all public hotels from catalog
+   * Returns all registered hotels in the public catalog
    */
   async getAllHotels(): Promise<HotelResponse[]> {
-    try {
-      const res = await apiClient.get<any, any>('/hotels/allhotels');
-      let rawList: any[] = [];
-      if (Array.isArray(res)) {
-        rawList = res;
-      } else if (Array.isArray(res?.content)) {
-        rawList = res.content;
-      } else if (Array.isArray(res?.data)) {
-        rawList = res.data;
-      } else if (Array.isArray(res?.hotels)) {
-        rawList = res.hotels;
-      } else if (Array.isArray(res?.data?.content)) {
-        rawList = res.data.content;
-      } else if (res && typeof res === 'object' && (res.id || res.hotelName || res.name)) {
-        rawList = [res];
-      }
-      return rawList.map(normalizeHotelResponse);
-    } catch {
-      return this.getHotels();
-    }
-  },
-
-  /**
-   * GET /hotels/{hotelId}
-   * Get single public hotel by ID
-   */
-  async getHotelById(hotelId: number): Promise<HotelResponse> {
-    try {
-      const res = await apiClient.get<any, any>(`/hotels/${hotelId}`);
-      const raw = res?.data || res;
-      return normalizeHotelResponse(raw);
-    } catch {
-      return this.getAdminHotelById(hotelId);
-    }
-  },
-
-  /**
-   * GET /hotels/{hotelId}/rooms/allrooms
-   * List all public rooms for a given hotel
-   */
-  async getPublicHotelRooms(hotelId: number): Promise<RoomResponse[]> {
-    try {
-      const res = await apiClient.get<any, any>(`/hotels/${hotelId}/rooms/allrooms`);
-      let rawRooms: any[] = [];
-      if (Array.isArray(res)) {
-        rawRooms = res;
-      } else if (Array.isArray(res?.content)) {
-        rawRooms = res.content;
-      } else if (Array.isArray(res?.data)) {
-        rawRooms = res.data;
-      } else if (Array.isArray(res?.rooms)) {
-        rawRooms = res.rooms;
-      } else if (Array.isArray(res?.data?.content)) {
-        rawRooms = res.data.content;
-      }
-      return rawRooms.map((r) => normalizeRoomResponse(r, hotelId));
-    } catch {
-      return [];
-    }
-  },
-
-  /**
-   * GET /hotels/{hotelId}/rooms/{roomId}
-   * Get single public room details
-   */
-  async getPublicRoomById(hotelId: number, roomId: number): Promise<RoomResponse> {
-    try {
-      const res = await apiClient.get<any, any>(`/hotels/${hotelId}/rooms/${roomId}`);
-      const raw = res?.data || res;
-      return normalizeRoomResponse(raw, hotelId);
-    } catch {
-      const adminRes = await apiClient.get<any, any>(`/admin/hotels/${hotelId}/room/${roomId}`);
-      const raw = adminRes?.data || adminRes;
-      return normalizeRoomResponse(raw, hotelId);
-    }
+    const data = await hotelsApi.getAllHotels();
+    return data.map(normalizeHotelResponse);
   },
 
   /**
    * POST /hotels/search
-   * Search hotels by city, date range, rooms count with pagination.
-   * Public endpoint that does not require manager authentication.
+   * Body: { city, startDate, endDate, roomsCount, pageNumber, pageSize }
+   * Returns: { content: HotelPriceDto[], pageNumber, pageSize, totalElements, totalPages }
    */
-  async searchHotels(data: HotelSearchRequest): Promise<PageHotelPriceDto> {
-    const cityClean = data.city?.trim() === 'All' ? '' : (data.city?.trim() || '');
-    const pageNum = data.pageNumber ?? (data as any).page ?? 0;
-    const pageSizeNum = data.pageSize ?? (data as any).size ?? 10;
-
-    // Send clean payload matching standard Spring Boot / Jackson DTOs
-    const requestBody: Record<string, any> = {
-      city: cityClean,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      roomsCount: data.roomsCount || 1,
-      pageNumber: pageNum,
-      pageSize: pageSizeNum,
-      page: pageNum,
-      size: pageSizeNum,
-    };
-
-    try {
-      const res = await apiClient.post<any, any>('/hotels/search', requestBody);
-      
-      const rawContent =
-        res?.content ??
-        (res as any)?.data?.content ??
-        (Array.isArray(res) ? res : null) ??
-        (Array.isArray((res as any)?.data) ? (res as any).data : null) ??
-        (Array.isArray((res as any)?.hotels) ? (res as any).hotels : null) ??
-        (Array.isArray((res as any)?.hotelDtoList) ? (res as any).hotelDtoList : null) ??
-        (Array.isArray((res as any)?.result) ? (res as any).result : null);
-
-      if (Array.isArray(rawContent)) {
-        const normalizedContent = rawContent.map((item) => normalizeHotelPriceDto(item));
-        const totalElements =
-          res?.totalElements ??
-          (res as any)?.total ??
-          (res as any)?.data?.totalElements ??
-          normalizedContent.length;
-        const totalPages =
-          res?.totalPages ??
-          (res as any)?.data?.totalPages ??
-          (Math.ceil(totalElements / pageSizeNum) || 1);
-
-        return {
-          content: normalizedContent,
-          totalElements,
-          totalPages,
-          size: pageSizeNum,
-          number: pageNum,
-          last: pageNum + 1 >= totalPages,
-          first: pageNum === 0,
-          numberOfElements: normalizedContent.length,
-          empty: normalizedContent.length === 0,
-        };
-      }
-    } catch (err: any) {
-      console.warn('POST /hotels/search failed, attempting alternative public or admin hotel retrieval:', err);
-    }
-
-    // Try GET /hotels/allhotels (public hotel catalog endpoint)
-    try {
-      const publicHotels = await this.getAllHotels();
-      if (Array.isArray(publicHotels) && publicHotels.length > 0) {
-        const normalized = publicHotels.map((h) => normalizeHotelPriceDto(h));
-        const matched = cityClean
-          ? normalized.filter(
-              (h) =>
-                h.cityName.toLowerCase().includes(cityClean.toLowerCase()) ||
-                cityClean.toLowerCase().includes(h.cityName.toLowerCase()) ||
-                h.hotelName.toLowerCase().includes(cityClean.toLowerCase())
-            )
-          : normalized;
-
-        const startIndex = pageNum * pageSizeNum;
-        const paged = (matched.length > 0 ? matched : normalized).slice(startIndex, startIndex + pageSizeNum);
-
-        return {
-          content: paged,
-          totalElements: (matched.length > 0 ? matched : normalized).length,
-          totalPages: Math.ceil((matched.length > 0 ? matched : normalized).length / pageSizeNum) || 1,
-          last: startIndex + pageSizeNum >= (matched.length > 0 ? matched : normalized).length,
-          size: pageSizeNum,
-          number: pageNum,
-          first: pageNum === 0,
-          numberOfElements: paged.length,
-          empty: paged.length === 0,
-        };
-      }
-    } catch {
-      // Ignore if /hotels/allhotels is not present
-    }
-
-    // Try GET /hotels
-    try {
-      const publicRes = await apiClient.get<any, any>('/hotels');
-      const publicList =
-        (Array.isArray(publicRes) ? publicRes : null) ??
-        (Array.isArray(publicRes?.content) ? publicRes.content : null) ??
-        (Array.isArray(publicRes?.data) ? publicRes.data : null) ??
-        (Array.isArray(publicRes?.hotels) ? publicRes.hotels : null);
-
-      if (Array.isArray(publicList) && publicList.length > 0) {
-        const normalized = publicList.map((h) => normalizeHotelPriceDto(h));
-        const matched = cityClean
-          ? normalized.filter(
-              (h) =>
-                h.cityName.toLowerCase().includes(cityClean.toLowerCase()) ||
-                cityClean.toLowerCase().includes(h.cityName.toLowerCase()) ||
-                h.hotelName.toLowerCase().includes(cityClean.toLowerCase())
-            )
-          : normalized;
-
-        const startIndex = pageNum * pageSizeNum;
-        const paged = (matched.length > 0 ? matched : normalized).slice(startIndex, startIndex + pageSizeNum);
-
-        return {
-          content: paged,
-          totalElements: (matched.length > 0 ? matched : normalized).length,
-          totalPages: Math.ceil((matched.length > 0 ? matched : normalized).length / pageSizeNum) || 1,
-          last: startIndex + pageSizeNum >= (matched.length > 0 ? matched : normalized).length,
-          size: pageSizeNum,
-          number: pageNum,
-          first: pageNum === 0,
-          numberOfElements: paged.length,
-          empty: paged.length === 0,
-        };
-      }
-    } catch {
-      // Ignore if /hotels is not present
-    }
-
-    // If authenticated as admin or manager, attempt GET /admin/hotels
-    try {
-      const allHotels = await this.getAdminHotels();
-      if (allHotels && allHotels.length > 0) {
-        const cityQuery = cityClean.toLowerCase();
-        const matchedHotels = allHotels.filter((h) => {
-          if (!cityQuery) return true;
-          const hotelCity = h.cityName?.toLowerCase() || '';
-          const hotelName = h.hotelName?.toLowerCase() || '';
-          return hotelCity.includes(cityQuery) || cityQuery.includes(hotelCity) || hotelName.includes(cityQuery);
-        });
-
-        const itemsToUse = matchedHotels.length > 0 ? matchedHotels : allHotels;
-        const startIndex = pageNum * pageSizeNum;
-        const paged = itemsToUse.slice(startIndex, startIndex + pageSizeNum);
-
-        const mappedContent: HotelPriceDto[] = paged.map((h) =>
-          normalizeHotelPriceDto(h)
-        );
-
-        return {
-          content: mappedContent,
-          totalElements: itemsToUse.length,
-          totalPages: Math.ceil(itemsToUse.length / pageSizeNum) || 1,
-          last: startIndex + pageSizeNum >= itemsToUse.length,
-          size: pageSizeNum,
-          number: pageNum,
-          first: pageNum === 0,
-          numberOfElements: mappedContent.length,
-          empty: mappedContent.length === 0,
-        };
-      }
-    } catch {
-      // Ignored
-    }
-
+  async searchHotels(params: HotelSearchRequest): Promise<PageHotelPriceDto> {
+    const res = await hotelsApi.searchHotels(params);
+    const content = (res?.content || []).map(normalizeHotelPriceDto);
     return {
-      content: [],
-      totalElements: 0,
-      totalPages: 0,
-      last: true,
-      size: pageSizeNum,
-      number: pageNum,
-      first: true,
-      numberOfElements: 0,
-      empty: true,
+      content,
+      pageNumber: res?.pageNumber ?? params.pageNumber ?? 0,
+      pageSize: res?.pageSize ?? params.pageSize ?? 20,
+      totalElements: res?.totalElements ?? content.length,
+      totalPages: res?.totalPages ?? Math.ceil((res?.totalElements ?? content.length) / (params.pageSize || 20)),
+      last: res?.last ?? true,
+      first: res?.first ?? true,
+      size: res?.size ?? params.pageSize,
+      number: res?.number ?? params.pageNumber,
+      numberOfElements: res?.numberOfElements ?? content.length,
+      empty: res?.empty ?? content.length === 0,
     };
+  },
+
+  /**
+   * GET /hotels/{hotelId}
+   * Retrieve single hotel profile
+   */
+  async getHotelById(hotelId: number): Promise<HotelResponse> {
+    const raw = await hotelsApi.getHotelById(hotelId);
+    return normalizeHotelResponse(raw);
   },
 
   /**
    * GET /hotels/{hotelId}/info
-   * Detailed hotel info with associated rooms.
+   * Retrieve hotel and its rooms in a single unified call
    */
   async getHotelInfo(hotelId: number): Promise<HotelInfoResponse> {
-    try {
-      const res = await apiClient.get<any, any>(`/hotels/${hotelId}/info`);
-      if (res) {
-        let hotel: HotelResponse | null = null;
-        let rooms: RoomResponse[] = [];
-
-        if (res.hotel) {
-          hotel = normalizeHotelResponse(res.hotel);
-          rooms = Array.isArray(res.rooms)
-            ? res.rooms.map((r: any) => normalizeRoomResponse(r, hotelId))
-            : [];
-        } else if (res.data?.hotel) {
-          hotel = normalizeHotelResponse(res.data.hotel);
-          rooms = Array.isArray(res.data.rooms)
-            ? res.data.rooms.map((r: any) => normalizeRoomResponse(r, hotelId))
-            : [];
-        } else if (res.id || res.hotelId || res.hotelName || res.name) {
-          hotel = normalizeHotelResponse(res);
-          rooms = Array.isArray(res.rooms)
-            ? res.rooms.map((r: any) => normalizeRoomResponse(r, hotelId))
-            : [];
-        }
-
-        // If rooms were not included in /info response, fetch from /hotels/{hotelId}/rooms/allrooms
-        if (hotel && rooms.length === 0) {
-          const publicRooms = await this.getPublicHotelRooms(hotelId);
-          if (publicRooms.length > 0) {
-            rooms = publicRooms;
-          }
-        }
-
-        if (hotel) {
-          return { hotel, rooms };
-        }
-      }
-    } catch {
-      // Fallback: Query public /hotels/{hotelId} and /hotels/{hotelId}/rooms/allrooms
-    }
-
-    // Attempt GET /hotels/{hotelId} + GET /hotels/{hotelId}/rooms/allrooms
-    try {
-      const publicHotel = await this.getHotelById(hotelId);
-      if (publicHotel && (publicHotel.id || publicHotel.hotelName)) {
-        let rooms = await this.getPublicHotelRooms(hotelId);
-        if (rooms.length === 0) {
-          try {
-            const adminRoomRes = await apiClient.get<any, any>(`/admin/hotels/${hotelId}/room`);
-            const rawRooms = Array.isArray(adminRoomRes)
-              ? adminRoomRes
-              : (Array.isArray(adminRoomRes?.content) ? adminRoomRes.content : (Array.isArray(adminRoomRes?.data) ? adminRoomRes.data : []));
-            rooms = rawRooms.map((r: any) => normalizeRoomResponse(r, hotelId));
-          } catch {
-            rooms = [];
-          }
-        }
-        return {
-          hotel: publicHotel,
-          rooms,
-        };
-      }
-    } catch {
-      // Fallback to admin
-    }
-
-    const hotel = await this.getAdminHotelById(hotelId);
-    let rooms: RoomResponse[] = [];
-    try {
-      rooms = await this.getPublicHotelRooms(hotelId);
-      if (rooms.length === 0) {
-        const roomRes = await apiClient.get<any, any>(`/admin/hotels/${hotelId}/room`);
-        const rawRooms = Array.isArray(roomRes)
-          ? roomRes
-          : (Array.isArray(roomRes?.content) ? roomRes.content : (Array.isArray(roomRes?.data) ? roomRes.data : []));
-        rooms = rawRooms.map((r: any) => normalizeRoomResponse(r, hotelId));
-      }
-    } catch {
-      rooms = [];
-    }
-
+    const raw = await hotelsApi.getHotelInfo(hotelId);
     return {
-      hotel,
-      rooms,
+      hotel: normalizeHotelResponse(raw.hotel || raw),
+      rooms: (raw.rooms || []).map((r) => normalizeRoomResponse(r, hotelId)),
     };
-  },
-
-  /**
-   * GET /admin/hotels
-   * List all hotels for admin/manager/catalog directly from backend
-   */
-  async getAdminHotels(): Promise<HotelResponse[]> {
-    const res = await apiClient.get<any, any>('/admin/hotels');
-    let rawList: any[] = [];
-    if (Array.isArray(res)) {
-      rawList = res;
-    } else if (Array.isArray(res?.content)) {
-      rawList = res.content;
-    } else if (Array.isArray(res?.data)) {
-      rawList = res.data;
-    } else if (Array.isArray(res?.hotels)) {
-      rawList = res.hotels;
-    } else if (Array.isArray(res?.data?.content)) {
-      rawList = res.data.content;
-    } else if (res && typeof res === 'object' && (res.id || res.hotelName || res.name)) {
-      rawList = [res];
-    }
-    return rawList.map(normalizeHotelResponse);
   },
 
   /**
    * POST /admin/hotels
    * Create a new hotel
    */
-  async createAdminHotel(data: HotelRequest): Promise<HotelResponse> {
-    const res = await apiClient.post<any, any>('/admin/hotels', data);
-    const raw = res?.data || res;
-    return normalizeHotelResponse(raw || data);
-  },
-
-  /**
-   * GET /admin/hotels/{id}
-   * Get single hotel details by ID
-   */
-  async getAdminHotelById(id: number): Promise<HotelResponse> {
-    const res = await apiClient.get<any, any>(`/admin/hotels/${id}`);
-    const raw = res?.data || res;
+  async createHotel(data: HotelRequest): Promise<HotelResponse> {
+    const raw = await adminApi.createHotel(data);
     return normalizeHotelResponse(raw);
   },
 
@@ -547,87 +249,61 @@ export const hotelService = {
    * PUT /admin/hotels/{id}
    * Update hotel details
    */
-  async updateAdminHotel(id: number, data: HotelRequest): Promise<HotelResponse> {
-    const res = await apiClient.put<any, any>(`/admin/hotels/${id}`, data);
-    const raw = res?.data || res;
-    return normalizeHotelResponse(raw || { id, ...data });
+  async updateHotel(id: number, data: HotelRequest): Promise<HotelResponse> {
+    const raw = await adminApi.updateHotel(id, data);
+    return normalizeHotelResponse(raw);
   },
 
   /**
    * DELETE /admin/hotels/{id}
-   * Delete hotel by ID
+   * Delete a hotel
    */
-  async deleteAdminHotel(id: number): Promise<void> {
-    await apiClient.delete(`/admin/hotels/${id}`);
+  async deleteHotel(id: number): Promise<void> {
+    return adminApi.deleteHotel(id);
   },
 
   /**
    * PATCH /admin/hotels/{id}/activate
-   * Activate hotel (one-time activation)
    */
-  async activateHotel(id: number): Promise<HotelResponse | void> {
-    const res = await apiClient.patch<any, any>(`/admin/hotels/${id}/activate`);
-    return res ? normalizeHotelResponse(res?.data || res) : undefined;
+  async activateHotel(id: number): Promise<HotelResponse> {
+    const raw = await adminApi.activateHotel(id);
+    return normalizeHotelResponse(raw);
   },
 
   /**
    * PATCH /admin/hotels/{id}/deactivate
-   * Deactivate hotel
    */
-  async deactivateHotel(id: number): Promise<HotelResponse | void> {
-    const res = await apiClient.patch<any, any>(`/admin/hotels/${id}/deactivate`);
-    return res ? normalizeHotelResponse(res?.data || res) : undefined;
-  },
-
-  /**
-   * GET /hotels
-   * List all public hotels from catalog (fallback alias)
-   */
-  async getHotels(): Promise<HotelResponse[]> {
-    try {
-      const res = await apiClient.get<any, any>('/hotels');
-      let rawList: any[] = [];
-      if (Array.isArray(res)) {
-        rawList = res;
-      } else if (Array.isArray(res?.content)) {
-        rawList = res.content;
-      } else if (Array.isArray(res?.data)) {
-        rawList = res.data;
-      } else if (Array.isArray(res?.hotels)) {
-        rawList = res.hotels;
-      } else if (Array.isArray(res?.data?.content)) {
-        rawList = res.data.content;
-      } else if (res && typeof res === 'object' && (res.id || res.hotelName || res.name)) {
-        rawList = [res];
-      }
-      return rawList.map(normalizeHotelResponse);
-    } catch {
-      return this.getAdminHotels();
-    }
+  async deactivateHotel(id: number): Promise<HotelResponse> {
+    const raw = await adminApi.deactivateHotel(id);
+    return normalizeHotelResponse(raw);
   },
 
   /**
    * GET /admin/hotels/owner
-   * Get hotels belonging to the current owner/manager
+   * Get hotels owned by logged-in manager/admin
    */
+  async getAdminHotels(): Promise<HotelResponse[]> {
+    const list = await adminApi.getOwnerHotels();
+    return list.map(normalizeHotelResponse);
+  },
+
   async getOwnerHotels(): Promise<HotelResponse[]> {
-    const res = await apiClient.get<any, any>('/admin/hotels/owner');
-    let rawList: any[] = [];
-    if (Array.isArray(res)) {
-      rawList = res;
-    } else if (Array.isArray(res?.content)) {
-      rawList = res.content;
-    } else if (Array.isArray(res?.data)) {
-      rawList = res.data;
-    } else if (Array.isArray(res?.hotels)) {
-      rawList = res.hotels;
-    } else if (Array.isArray(res?.data?.content)) {
-      rawList = res.data.content;
-    } else if (res && typeof res === 'object' && (res.id || res.hotelName || res.name)) {
-      rawList = [res];
-    }
-    return rawList.map(normalizeHotelResponse);
+    return this.getAdminHotels();
+  },
+
+  async getAdminHotelById(id: number): Promise<HotelResponse> {
+    return this.getHotelById(id);
+  },
+
+  async createAdminHotel(data: HotelRequest): Promise<HotelResponse> {
+    return this.createHotel(data);
+  },
+
+  async updateAdminHotel(id: number, data: HotelRequest): Promise<HotelResponse> {
+    return this.updateHotel(id, data);
+  },
+
+  async deleteAdminHotel(id: number): Promise<void> {
+    return this.deleteHotel(id);
   },
 };
-
-

@@ -1,7 +1,8 @@
-import { apiClient } from '../lib/apiClient';
+import { bookingsApi } from '../api';
 
 export interface PaymentInitiationResponse {
   paymentUrl?: string;
+  sessionUrl?: string;
   sessionId?: string;
   status?: string;
   message?: string;
@@ -10,12 +11,11 @@ export interface PaymentInitiationResponse {
 
 export const paymentService = {
   /**
-   * POST /bookings/{bookingId}/payments
-   * Backend initiates payment processing for booking and returns payment gateway URL or status
+   * 3) POST /bookings/{bookingId}/payments
+   * Backend initiates payment processing for booking and returns Stripe Checkout URL
    */
   async initiatePayment(bookingId: number): Promise<PaymentInitiationResponse> {
-    const res = await apiClient.post<any, PaymentInitiationResponse>(`/bookings/${bookingId}/payments`);
-    return res;
+    return bookingsApi.initiatePayment(bookingId);
   },
 
   /**
@@ -27,7 +27,8 @@ export const paymentService = {
     return {
       endpoint: '/webhook/stripe',
       method: 'POST',
-      description: 'Server-side webhook for Stripe fulfillment events with signature verification.',
+      description:
+        'Server-side webhook for Stripe fulfillment events with signature verification. Strictly server-to-server.',
     };
   },
 };

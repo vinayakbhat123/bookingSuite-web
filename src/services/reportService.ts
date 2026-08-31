@@ -1,4 +1,4 @@
-import { apiClient } from '../lib/apiClient';
+import { adminApi } from '../api';
 import { HotelReport } from '../types/api';
 
 export interface ReportQueryParams {
@@ -8,23 +8,25 @@ export interface ReportQueryParams {
 
 export const reportService = {
   /**
-   * GET /admin/hotels/{hotelId}/report
-   * Get total booking, total revenue, and average revenue for a hotel
+   * GET /admin/hotels/{hotelId}/report?startDate=&endDate=
+   * Returns: { TotalBooking, TotalRevenue, AverageRevenue }
    */
   async getHotelReport(
     hotelId: number,
     startDateOrParams?: string | ReportQueryParams,
     endDate?: string
   ): Promise<HotelReport> {
-    let params: ReportQueryParams | undefined;
+    let startDate: string | undefined;
+    let end: string | undefined;
+
     if (typeof startDateOrParams === 'string') {
-      params = { startDate: startDateOrParams, endDate };
-    } else {
-      params = startDateOrParams;
+      startDate = startDateOrParams;
+      end = endDate;
+    } else if (startDateOrParams) {
+      startDate = startDateOrParams.startDate;
+      end = startDateOrParams.endDate;
     }
-    const res = await apiClient.get<any, HotelReport>(`/admin/hotels/${hotelId}/report`, {
-      params,
-    });
-    return res;
+
+    return adminApi.getHotelReport(hotelId, startDate, end);
   },
 };
