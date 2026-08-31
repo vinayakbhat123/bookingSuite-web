@@ -101,6 +101,16 @@ export const ManagerLayout: React.FC = () => {
     }
   }, [hasManagerAccess]);
 
+  useEffect(() => {
+    const handleHotelsUpdate = () => {
+      loadHotels();
+    };
+    window.addEventListener('bookingsuite_hotels_updated', handleHotelsUpdate);
+    return () => {
+      window.removeEventListener('bookingsuite_hotels_updated', handleHotelsUpdate);
+    };
+  }, [hasManagerAccess]);
+
   if (isLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">

@@ -242,7 +242,11 @@ export const hotelService = {
    */
   async createHotel(data: HotelRequest): Promise<HotelResponse> {
     const raw = await adminApi.createHotel(data);
-    return normalizeHotelResponse(raw);
+    const result = normalizeHotelResponse(raw);
+    try {
+      window.dispatchEvent(new CustomEvent('bookingsuite_hotels_updated'));
+    } catch {}
+    return result;
   },
 
   /**
@@ -251,7 +255,11 @@ export const hotelService = {
    */
   async updateHotel(id: number, data: HotelRequest): Promise<HotelResponse> {
     const raw = await adminApi.updateHotel(id, data);
-    return normalizeHotelResponse(raw);
+    const result = normalizeHotelResponse(raw);
+    try {
+      window.dispatchEvent(new CustomEvent('bookingsuite_hotels_updated'));
+    } catch {}
+    return result;
   },
 
   /**
@@ -259,7 +267,10 @@ export const hotelService = {
    * Delete a hotel
    */
   async deleteHotel(id: number): Promise<void> {
-    return adminApi.deleteHotel(id);
+    await adminApi.deleteHotel(id);
+    try {
+      window.dispatchEvent(new CustomEvent('bookingsuite_hotels_updated'));
+    } catch {}
   },
 
   /**
@@ -267,7 +278,11 @@ export const hotelService = {
    */
   async activateHotel(id: number): Promise<HotelResponse> {
     const raw = await adminApi.activateHotel(id);
-    return normalizeHotelResponse(raw);
+    const result = normalizeHotelResponse(raw);
+    try {
+      window.dispatchEvent(new CustomEvent('bookingsuite_hotels_updated'));
+    } catch {}
+    return result;
   },
 
   /**
@@ -275,20 +290,35 @@ export const hotelService = {
    */
   async deactivateHotel(id: number): Promise<HotelResponse> {
     const raw = await adminApi.deactivateHotel(id);
-    return normalizeHotelResponse(raw);
+    const result = normalizeHotelResponse(raw);
+    try {
+      window.dispatchEvent(new CustomEvent('bookingsuite_hotels_updated'));
+    } catch {}
+    return result;
+  },
+
+  /**
+   * GET /hotels/allhotels
+   * Public get all hotels catalog used across Admin Dashboard and Home Page
+   */
+  async getAdminHotels(): Promise<HotelResponse[]> {
+    return this.getAllHotels();
   },
 
   /**
    * GET /admin/hotels/owner
-   * Get hotels owned by logged-in manager/admin
+   * Get hotels owned by logged-in manager/admin (with fallback to all hotels)
    */
-  async getAdminHotels(): Promise<HotelResponse[]> {
-    const list = await adminApi.getOwnerHotels();
-    return list.map(normalizeHotelResponse);
-  },
-
   async getOwnerHotels(): Promise<HotelResponse[]> {
-    return this.getAdminHotels();
+    try {
+      const list = await adminApi.getOwnerHotels();
+      if (list && list.length > 0) {
+        return list.map(normalizeHotelResponse);
+      }
+      return this.getAllHotels();
+    } catch {
+      return this.getAllHotels();
+    }
   },
 
   async getAdminHotelById(id: number): Promise<HotelResponse> {

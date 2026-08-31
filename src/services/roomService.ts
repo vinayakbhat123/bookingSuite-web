@@ -32,7 +32,11 @@ export const roomService = {
    */
   async createRoom(hotelId: number, data: RoomRequest): Promise<RoomResponse> {
     const raw = await adminApi.createRoom(hotelId, data);
-    return normalizeRoomResponse(raw, hotelId);
+    const result = normalizeRoomResponse(raw, hotelId);
+    try {
+      window.dispatchEvent(new CustomEvent('bookingsuite_rooms_updated'));
+    } catch {}
+    return result;
   },
 
   /**
@@ -45,7 +49,11 @@ export const roomService = {
     data: RoomRequest
   ): Promise<RoomResponse> {
     const raw = await adminApi.updateRoom(hotelId, roomId, data);
-    return normalizeRoomResponse(raw, hotelId);
+    const result = normalizeRoomResponse(raw, hotelId);
+    try {
+      window.dispatchEvent(new CustomEvent('bookingsuite_rooms_updated'));
+    } catch {}
+    return result;
   },
 
   /**
@@ -53,7 +61,10 @@ export const roomService = {
    * Delete room from hotel (Manager / Admin)
    */
   async deleteRoom(hotelId: number, roomId: number): Promise<void> {
-    return adminApi.deleteRoom(hotelId, roomId);
+    await adminApi.deleteRoom(hotelId, roomId);
+    try {
+      window.dispatchEvent(new CustomEvent('bookingsuite_rooms_updated'));
+    } catch {}
   },
 
   /**

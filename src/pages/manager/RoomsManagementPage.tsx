@@ -89,6 +89,16 @@ export const RoomsManagementPage: React.FC<RoomsManagementPageProps> = ({
     fetchRooms();
   }, [activeHotelId]);
 
+  useEffect(() => {
+    const handleRoomsUpdate = () => {
+      fetchRooms();
+    };
+    window.addEventListener('bookingsuite_rooms_updated', handleRoomsUpdate);
+    return () => {
+      window.removeEventListener('bookingsuite_rooms_updated', handleRoomsUpdate);
+    };
+  }, [activeHotelId]);
+
   const handleOpenCreateModal = () => {
     setIsEditing(false);
     setEditingRoomId(null);
