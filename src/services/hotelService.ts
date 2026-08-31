@@ -443,6 +443,29 @@ export const hotelService = {
   },
 
   /**
+   * GET /hotels
+   * List all public hotels from catalog
+   */
+  async getHotels(): Promise<HotelResponse[]> {
+    const res = await apiClient.get<any, any>('/hotels');
+    let rawList: any[] = [];
+    if (Array.isArray(res)) {
+      rawList = res;
+    } else if (Array.isArray(res?.content)) {
+      rawList = res.content;
+    } else if (Array.isArray(res?.data)) {
+      rawList = res.data;
+    } else if (Array.isArray(res?.hotels)) {
+      rawList = res.hotels;
+    } else if (Array.isArray(res?.data?.content)) {
+      rawList = res.data.content;
+    } else if (res && typeof res === 'object' && (res.id || res.hotelName || res.name)) {
+      rawList = [res];
+    }
+    return rawList.map(normalizeHotelResponse);
+  },
+
+  /**
    * GET /admin/hotels/owner
    * Get hotels belonging to the current owner/manager
    */

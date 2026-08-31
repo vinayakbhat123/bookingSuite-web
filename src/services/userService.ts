@@ -1,5 +1,5 @@
 import { apiClient } from '../lib/apiClient';
-import { UserProfileRequest, UserResponse } from '../types/api';
+import { BookingResponse, UserProfileRequest, UserResponse } from '../types/api';
 
 export const userService = {
   /**
@@ -19,4 +19,14 @@ export const userService = {
     const res = await apiClient.put<any, UserResponse>('/users/profile', data);
     return res;
   },
+
+  /**
+   * GET /users/mybookings
+   * Retrieve all bookings for current authenticated user
+   */
+  async getMyBookings(): Promise<BookingResponse[]> {
+    const res = await apiClient.get<any, BookingResponse[]>('/users/mybookings');
+    return Array.isArray(res) ? res : (res as any)?.content || [];
+  },
 };
+
