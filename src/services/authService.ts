@@ -1,4 +1,4 @@
-import { apiClient, setAccessToken, setRefreshToken } from '../lib/apiClient';
+import { apiClient, getRefreshToken, setAccessToken, setRefreshToken } from '../lib/apiClient';
 import { ApiResponse, LoginRequest, LoginResponse, SignupRequest } from '../types/api';
 
 export const authService = {
@@ -27,26 +27,43 @@ export const authService = {
 
   /**
    * POST /auth/refresh
+   * Call refreshToken to fetch new accessToken
    */
   async refresh(refreshToken?: string): Promise<LoginResponse> {
-    const res = await apiClient.post<any, LoginResponse>('/auth/refresh', {
-      refreshToken,
+    const tokenToUse = refreshToken || getRefreshToken();
+    if (!tokenToUse) {
+      throw new Error('No refresh token available');
+    }
+    const res = await apiClient.post<any, any>('/auth/refresh', {
+      refreshToken: tokenToUse,
     });
-    if (res?.AccessToken) {
-      setAccessToken(res.AccessToken);
-      if (res.refreshToken) {
-        setRefreshToken(res.refreshToken);
+    const data = res?.data || res;
+    const newAccessToken = data?.AccessToken || data?.accessToken;
+    const newRefreshToken = data?.refreshToken || tokenToUse;
+    if (newAccessToken) {
+      setAccessToken(newAccessToken);
+      if (newRefreshToken) {
+        setRefreshToken(newRefreshToken);
       }
     }
-    return res;
+    return {
+      AccessToken: newAccessToken || '',
+      refreshToken: newRefreshToken,
+      roles: data?.roles,
+      user: data?.user,
+    };
   },
 
   /**
    * POST /auth/logout
+   * Logout using a refresh token
    */
-  async logout(): Promise<void> {
+  async logout(refreshToken?: string): Promise<void> {
     try {
-      await apiClient.post('/auth/logout');
+      const tokenToUse = refreshToken || getRefreshToken();
+      await apiClient.post('/auth/logout', {
+        refreshToken: tokenToUse,
+      });
     } catch {
       // ignore logout network errors
     } finally {

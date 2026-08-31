@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { getAccessToken, setAccessToken, setRefreshToken } from '../lib/apiClient';
+import { getAccessToken, getRefreshToken, setAccessToken, setRefreshToken } from '../lib/apiClient';
 import { authService } from '../services/authService';
 import { userService } from '../services/userService';
 import { LoginRequest, Role, SignupRequest, UserProfileRequest, UserResponse } from '../types/api';
@@ -17,6 +17,7 @@ interface AuthContextValue {
   isAdmin: boolean;
   isOwner: boolean;
   login: (data: LoginRequest) => Promise<UserResponse>;
+  loginWithRefreshToken: (token?: string) => Promise<UserResponse>;
   signup: (data: SignupRequest) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: UserProfileRequest) => Promise<UserResponse>;
@@ -54,6 +55,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshUser = useCallback(async () => {
+    const storedRefreshToken = getRefreshToken();
+
+    // Call POST /auth/refresh using refreshToken to fetch new accessToken every time on login/startup
+    if (storedRefreshToken) {
+      try {
+        const refreshRes = await authService.refresh(storedRefreshToken);
+        if (refreshRes?.AccessToken) {
+          setAccessToken(refreshRes.AccessToken);
+        }
+      } catch (err) {
+        console.warn('Session startup refresh token exchange:', err);
+      }
+    }
+
     const token = getAccessToken();
     if (!token) {
       setUser(null);
@@ -235,6 +250,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const loginWithRefreshToken = async (explicitToken?: string): Promise<UserResponse> => {
+    setIsLoading(true);
+    try {
+      const res = await authService.refresh(explicitToken);
+      const token = res.AccessToken || getAccessToken();
+      const jwtClaims = token ? decodeJwt(token) : null;
+      let resolvedRoles = resolveRoles(res.user || null, token, res.roles);
+
+      let profile: UserResponse;
+      try {
+        profile = await userService.getMe();
+        resolvedRoles = resolveRoles(profile, token, res.roles);
+      } catch {
+        profile = {
+          id: jwtClaims?.userId || 1,
+          name: jwtClaims?.name || 'User',
+          email: jwtClaims?.email || 'user@bookingsuite.com',
+        };
+      }
+
+      const fullUser: UserResponse = {
+        ...profile,
+        roles: resolvedRoles,
+        role: resolvedRoles[0] || 'HOTEL_MANAGER',
+      };
+      setUser(fullUser);
+      setRoles(resolvedRoles);
+      if (resolvedRoles.length > 0) {
+        localStorage.setItem('bookingsuite_active_role', resolvedRoles[0]);
+      }
+      toastSuccess('Session Refreshed', 'Signed in successfully via refresh token.');
+      return fullUser;
+    } catch (err: any) {
+      toastError('Refresh Sign-In Failed', typeof err === 'string' ? err : err.message || 'Invalid or expired refresh token.');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const signup = async (data: SignupRequest) => {
     setIsLoading(true);
     try {
@@ -327,6 +382,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin,
         isOwner,
         login,
+        loginWithRefreshToken,
         signup,
         logout,
         updateProfile,

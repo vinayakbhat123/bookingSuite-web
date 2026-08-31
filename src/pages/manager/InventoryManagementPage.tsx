@@ -18,7 +18,7 @@ import { useToast } from '../../context/ToastContext';
 import { inventoryService } from '../../services/inventoryService';
 import { roomService } from '../../services/roomService';
 import { HotelResponse, InventoryDto, RoomResponse, UpdateInventoryRequest } from '../../types/api';
-import { formatDisplayDate } from '../../utils/dateUtils';
+import { formatDateForApi, formatDisplayDate, getDaysAhead } from '../../utils/dateUtils';
 import { formatCurrency, getRoomTypeLabel } from '../../utils/formatters';
 
 export const InventoryManagementPage: React.FC = () => {
@@ -36,6 +36,8 @@ export const InventoryManagementPage: React.FC = () => {
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   // Update Inventory Form State (PATCH /admin/inventory/room/{roomId})
+  const [startDate, setStartDate] = useState<string>(formatDateForApi(new Date()));
+  const [endDate, setEndDate] = useState<string>(formatDateForApi(getDaysAhead(30)));
   const [totalCount, setTotalCount] = useState<number>(10);
   const [surgeFactor, setSurgeFactor] = useState<number>(1.0);
   const [closed, setClosed] = useState<boolean>(false);
@@ -105,6 +107,8 @@ export const InventoryManagementPage: React.FC = () => {
     setIsUpdating(true);
     try {
       const payload: UpdateInventoryRequest = {
+        startDate,
+        endDate,
         totalCount: Number(totalCount),
         surgeFactor: Number(surgeFactor),
         closed: Boolean(closed),
@@ -212,10 +216,34 @@ export const InventoryManagementPage: React.FC = () => {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 text-xs pt-2">
             <div>
               <label className="block text-slate-300 font-semibold mb-1">
-                Surge Multiplier (Factor)
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white font-bold focus:outline-none focus:ring-2 focus:ring-rose-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1">
+                End Date
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white font-bold focus:outline-none focus:ring-2 focus:ring-rose-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1">
+                Surge Multiplier
               </label>
               <div className="flex items-center gap-2">
                 <input
@@ -227,7 +255,7 @@ export const InventoryManagementPage: React.FC = () => {
                   onChange={(e) => setSurgeFactor(Number(e.target.value))}
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white font-bold focus:outline-none focus:ring-2 focus:ring-rose-500"
                 />
-                <span className="text-xs text-slate-400 font-mono">
+                <span className="text-xs text-slate-400 font-mono hidden xl:inline">
                   ≈ {formatCurrency(selectedRoom.basePrice * surgeFactor)}
                 </span>
               </div>
@@ -235,7 +263,7 @@ export const InventoryManagementPage: React.FC = () => {
 
             <div>
               <label className="block text-slate-300 font-semibold mb-1">
-                Total Available Units
+                Total Units
               </label>
               <input
                 type="number"
@@ -254,8 +282,8 @@ export const InventoryManagementPage: React.FC = () => {
                   onChange={(e) => setClosed(e.target.checked)}
                   className="w-4 h-4 text-rose-600 rounded"
                 />
-                <span className="text-xs font-semibold text-slate-200">
-                  {closed ? 'Blackout (Closed for Booking)' : 'Open for Reservations'}
+                <span className="text-xs font-semibold text-slate-200 truncate">
+                  {closed ? 'Closed (Blackout)' : 'Open (Active)'}
                 </span>
               </label>
             </div>
@@ -314,7 +342,19 @@ export const InventoryManagementPage: React.FC = () => {
                 {inventoryList.map((inv, idx) => (
                   <tr key={inv.id || idx} className="hover:bg-slate-50/50 transition-colors">
                     <td className="py-3.5 px-6 font-semibold text-slate-900">
-                      {formatDisplayDate(inv.date)}
+                      <div className="flex items-center gap-2">
+                        <span>{formatDisplayDate(inv.date)}</span>
+                        {inv.id && (
+                          <span className="text-[10px] font-mono font-normal text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                            #{inv.id}
+                          </span>
+                        )}
+                        {inv.city && (
+                          <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                            {inv.city}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3.5 px-6">
                       <span className="font-bold text-slate-800">{inv.bookedCount || 0}</span>

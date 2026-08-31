@@ -71,6 +71,7 @@ export interface RoomRequest {
   capacity: number;
   floor?: number;
   roomStatus?: RoomStatus;
+  status?: RoomStatus;
   photos?: string[];
   amenities?: string[];
 }
@@ -84,6 +85,7 @@ export interface RoomResponse {
   capacity: number;
   floor?: number;
   roomStatus: RoomStatus;
+  status?: RoomStatus;
   photos: string[];
   amenities: string[];
 }
@@ -183,6 +185,8 @@ export interface InventoryResponse {
 export type InventoryDto = InventoryResponse;
 
 export interface UpdateInventoryRequest {
+  startDate?: string;
+  endDate?: string;
   date?: string;
   totalCount?: number;
   surgeFactor?: number;
@@ -190,9 +194,13 @@ export interface UpdateInventoryRequest {
 }
 
 export interface HotelReport {
-  TotalBooking: number;
-  TotalRevenue: number;
-  AverageRevenue: number;
+  TotalBooking?: number;
+  totalBookings?: number;
+  totalBooking?: number;
+  TotalRevenue?: number;
+  totalRevenue?: number;
+  AverageRevenue?: number;
+  averageRevenue?: number;
 }
 
 export interface UserProfileRequest {

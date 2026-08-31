@@ -84,24 +84,28 @@ export const HotelReportsPage: React.FC = () => {
 
   const activeHotel = hotels.find((h) => h.id === activeHotelId);
 
+  const totalBookings = report?.totalBookings ?? report?.TotalBooking ?? report?.totalBooking ?? 0;
+  const totalRevenue = report?.totalRevenue ?? report?.TotalRevenue ?? 0;
+  const averageRevenue = report?.averageRevenue ?? report?.AverageRevenue ?? 0;
+
   // Prepare chart visual data
   const revenueChartData = [
     {
       category: 'Total Settled Revenue',
-      amount: report?.TotalRevenue || 0,
+      amount: totalRevenue,
       fill: '#e11d48',
     },
     {
       category: 'Average Revenue / Booking',
-      amount: (report?.AverageRevenue || 0) * 10,
+      amount: averageRevenue * 10,
       fill: '#d97706',
     },
   ];
 
   const pieData = [
-    { name: 'Completed Stays', value: Math.max(1, Math.round((report?.TotalBooking || 10) * 0.75)), color: '#10b981' },
-    { name: 'Pending Payments', value: Math.max(1, Math.round((report?.TotalBooking || 10) * 0.15)), color: '#f59e0b' },
-    { name: 'Cancelled Stays', value: Math.max(1, Math.round((report?.TotalBooking || 10) * 0.1)), color: '#f43f5e' },
+    { name: 'Completed Stays', value: Math.max(1, Math.round(totalBookings * 0.75)), color: '#10b981' },
+    { name: 'Pending Payments', value: Math.max(1, Math.round(totalBookings * 0.15)), color: '#f59e0b' },
+    { name: 'Cancelled Stays', value: Math.max(1, Math.round(totalBookings * 0.1)), color: '#f43f5e' },
   ];
 
   return (
@@ -195,7 +199,7 @@ export const HotelReportsPage: React.FC = () => {
           </div>
           <div>
             <span className="text-3xl font-black text-slate-900">
-              {isLoading ? '...' : report?.TotalBooking || 0}
+              {isLoading ? '...' : totalBookings}
             </span>
             <span className="text-[11px] text-slate-400 block mt-1">Confirmed guest stays</span>
           </div>
@@ -210,7 +214,7 @@ export const HotelReportsPage: React.FC = () => {
           </div>
           <div>
             <span className="text-3xl font-black text-emerald-600">
-              {isLoading ? '...' : formatCurrency(report?.TotalRevenue)}
+              {isLoading ? '...' : formatCurrency(totalRevenue)}
             </span>
             <span className="text-[11px] text-slate-400 block mt-1">Gross collected via Stripe</span>
           </div>
@@ -225,7 +229,7 @@ export const HotelReportsPage: React.FC = () => {
           </div>
           <div>
             <span className="text-3xl font-black text-slate-900">
-              {isLoading ? '...' : formatCurrency(report?.AverageRevenue)}
+              {isLoading ? '...' : formatCurrency(averageRevenue)}
             </span>
             <span className="text-[11px] text-slate-400 block mt-1">Average ticket yield</span>
           </div>

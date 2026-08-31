@@ -136,19 +136,13 @@ export const HotelsManagementPage: React.FC = () => {
     }
   };
 
-  const handleToggleActivate = async (hotel: HotelResponse) => {
-    const isCurrentlyActive = hotel.active !== false;
+  const handleActivateHotel = async (hotel: HotelResponse) => {
     try {
-      if (isCurrentlyActive) {
-        await hotelService.deactivateHotel(hotel.id);
-        toastInfo('Hotel Deactivated', `${hotel.hotelName} is now inactive.`);
-      } else {
-        await hotelService.activateHotel(hotel.id);
-        toastSuccess('Hotel Activated', `${hotel.hotelName} is now live and bookable.`);
-      }
+      await hotelService.activateHotel(hotel.id);
+      toastSuccess('Hotel Activated', `${hotel.hotelName} has been successfully activated.`);
       fetchHotels();
     } catch (err: any) {
-      toastError('Status Change Failed', typeof err === 'string' ? err : err.message);
+      toastError('Activation Failed', typeof err === 'string' ? err : err.message);
     }
   };
 
@@ -332,18 +326,21 @@ export const HotelsManagementPage: React.FC = () => {
                         {hotel.contactInfo?.phoneNumber && <p>📞 {hotel.contactInfo.phoneNumber}</p>}
                       </td>
                       <td className="py-4 px-6">
-                        <button
-                          onClick={() => handleToggleActivate(hotel)}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border transition-colors ${
-                            isActive
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                              : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-                          }`}
-                          title="Click to toggle activation (PATCH /admin/hotels/{id}/activate or deactivate)"
-                        >
-                          {isActive ? <Power className="w-3 h-3 text-emerald-600" /> : <PowerOff className="w-3 h-3 text-slate-400" />}
-                          <span>{isActive ? 'ACTIVE' : 'INACTIVE'}</span>
-                        </button>
+                        {isActive ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[11px] font-bold">
+                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>ACTIVE</span>
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleActivateHotel(hotel)}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-[11px] font-bold shadow-xs transition-colors cursor-pointer"
+                            title="Click once to activate hotel (PATCH /admin/hotels/{id}/activate)"
+                          >
+                            <Power className="w-3.5 h-3.5" />
+                            <span>Activate</span>
+                          </button>
+                        )}
                       </td>
                       <td className="py-4 px-6 text-right space-x-2">
                         <button
