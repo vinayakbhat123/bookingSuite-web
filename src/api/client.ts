@@ -299,21 +299,37 @@ export async function apiFetch<T>(
       url: fullUrl,
       status: response.status,
       requestData: options.body ? tryParseJson(options.body) : undefined,
-      responseData: responseBody,
+      responseData: responseBody.data,
       durationMs,
     };
     notifyLog(logEntry);
 
-    if (!response.ok) {
-      const errorMsg =
-        responseBody?.message ||
-        responseBody?.error ||
-        (Array.isArray(responseBody?.errors)
-          ? responseBody.errors.map((e: any) => e.defaultMessage || e.message || e).join(', ')
-          : null) ||
-        `HTTP ${response.status}: ${response.statusText}`;
-      throw new Error(errorMsg);
-    }
+    console.log("API DEBUG:", {
+  status: response.status,
+  ok: response.ok,
+  statusText: response.statusText,
+  responseBody,
+});
+
+ // Treat 302 as a success IF the JSON body indicates success AND contains data
+const isSuccessfulRedirect = response.status === 302 && 
+                             responseBody && 
+                             typeof responseBody === 'object' && 
+                             responseBody.success === true;
+
+if (!response.ok && !isSuccessfulRedirect) {
+  const errorMsg =
+    responseBody?.message ||
+    responseBody?.error ||
+    (Array.isArray(responseBody?.errors)
+      ? responseBody.errors
+          .map((e: any) => e.defaultMessage || e.message || e)
+          .join(', ')
+      : null) ||
+    `HTTP ${response.status}: ${response.statusText}`;
+
+  throw new Error(errorMsg);
+}
 
     // Unwrap envelope logic:
     // If endpoint is an exception that returns raw DTO -> return responseBody
