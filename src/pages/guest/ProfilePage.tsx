@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   AlertCircle,
+  Briefcase,
   Calendar,
   CheckCircle2,
   Mail,
@@ -8,16 +10,17 @@ import {
   Save,
   Shield,
   User,
+  UserCheck,
 } from 'lucide-react';
 import { LoadingSpinner } from '../../components/LoadingSkeleton';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { userService } from '../../services/userService';
-import { UserProfileRequest, UserResponse } from '../../types/api';
+import { Role, UserProfileRequest, UserResponse } from '../../types/api';
 import { getRoleLabel } from '../../utils/formatters';
 
 export const ProfilePage: React.FC = () => {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, roles, activeRole, switchSimulatedRole, isHotelManager } = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -96,8 +99,62 @@ export const ProfilePage: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Account Profile</h1>
         <p className="text-xs text-slate-500 mt-1">
-          Manage your personal information, contact methods, and traveler details.
+          Manage your personal information, contact methods, and role permissions.
         </p>
+      </div>
+
+      {/* Role & Access Card */}
+      <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-700/60 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-rose-600 rounded-2xl text-white">
+              <Shield className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-white">Role-Based Access Control (RBAC)</h2>
+              <p className="text-xs text-slate-400">
+                Active View Role: <span className="font-mono text-rose-400 font-bold">{getRoleLabel(activeRole)}</span>
+              </p>
+            </div>
+          </div>
+
+          {isHotelManager && (
+            <Link
+              to="/manager"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+            >
+              <Briefcase className="w-4 h-4" />
+              <span>Open Hotel Manager Portal →</span>
+            </Link>
+          )}
+        </div>
+
+        <div className="space-y-2 text-xs">
+          <p className="text-slate-300">
+            Switch your active view role to access administrative features and management portals:
+          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {(['HOTEL_MANAGER', 'ADMIN', 'OWNER', 'GUEST'] as Role[]).map((r) => {
+              const isActive = activeRole === r;
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => switchSimulatedRole(r)}
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-bold transition-all text-xs ${
+                    isActive
+                      ? 'bg-white text-slate-900 shadow-md'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
+                  }`}
+                >
+                  <UserCheck className={`w-3.5 h-3.5 ${isActive ? 'text-rose-600' : 'text-slate-500'}`} />
+                  <span>{getRoleLabel(r)}</span>
+                  {isActive && <span className="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.2 rounded-full font-bold">Active</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
@@ -113,7 +170,7 @@ export const ProfilePage: React.FC = () => {
             <div className="flex items-center gap-2 mt-1">
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
                 <Shield className="w-3 h-3" />
-                <span>{getRoleLabel(user?.roles?.[0] || user?.role || 'GUEST')}</span>
+                <span>{getRoleLabel(activeRole)}</span>
               </span>
               <span className="text-xs text-slate-400 font-mono">ID #{user?.id || '—'}</span>
             </div>

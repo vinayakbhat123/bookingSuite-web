@@ -3,11 +3,13 @@ import { getAccessToken, setAccessToken, setRefreshToken } from '../lib/apiClien
 import { authService } from '../services/authService';
 import { userService } from '../services/userService';
 import { LoginRequest, Role, SignupRequest, UserProfileRequest, UserResponse } from '../types/api';
+import { decodeJwt, extractRolesFromSources, isHotelManagerRole, normalizeRole } from '../utils/roleUtils';
 import { useToast } from './ToastContext';
 
 interface AuthContextValue {
   user: UserResponse | null;
   roles: Role[];
+  activeRole: Role;
   isAuthenticated: boolean;
   isLoading: boolean;
   isGuest: boolean;
@@ -27,34 +29,81 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserResponse | null>(null);
-  const [roles, setRoles] = useState<Role[]>([]);
+  const [roles, setRoles] = useState<Role[]>(() => {
+    const savedRole = localStorage.getItem('bookingsuite_active_role');
+    return savedRole ? [normalizeRole(savedRole)] : [];
+  });
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { error: toastError, success: toastSuccess, info: toastInfo } = useToast();
 
-  const resolveRoles = (userObj: UserResponse | null, explicitRoles?: Role[]): Role[] => {
-    if (explicitRoles && explicitRoles.length > 0) return explicitRoles;
-    if (userObj?.roles && userObj.roles.length > 0) return userObj.roles;
-    if (userObj?.role) return [userObj.role];
-    return ['GUEST'];
+  const resolveRoles = (userObj: UserResponse | null, token?: string | null, explicitRoles?: any): Role[] => {
+    const jwtClaims = token ? decodeJwt(token) : null;
+    const storedRole = localStorage.getItem('bookingsuite_active_role');
+
+    const extracted = extractRolesFromSources(
+      explicitRoles,
+      userObj?.roles,
+      userObj?.role,
+      (userObj as any)?.authorities,
+      (userObj as any)?.authority,
+      jwtClaims,
+      storedRole ? [storedRole] : undefined
+    );
+
+    return extracted;
   };
 
   const refreshUser = useCallback(async () => {
     const token = getAccessToken();
     if (!token) {
       setUser(null);
-      setRoles([]);
+      const savedRole = localStorage.getItem('bookingsuite_active_role');
+      setRoles(savedRole ? [normalizeRole(savedRole)] : []);
       setIsLoading(false);
       return;
     }
 
+    const jwtClaims = decodeJwt(token);
+
+    // Provide initial state from token immediately
+    const initialRoles = resolveRoles(null, token);
+    setRoles(initialRoles);
+
+    if (jwtClaims) {
+      setUser({
+        id: jwtClaims.userId || jwtClaims.id || jwtClaims.sub || 1,
+        name: jwtClaims.name || jwtClaims.sub?.split('@')[0] || 'User',
+        email: jwtClaims.email || (jwtClaims.sub?.includes('@') ? jwtClaims.sub : 'user@bookingsuite.com'),
+        roles: initialRoles,
+        role: initialRoles[0] || 'HOTEL_MANAGER',
+      });
+    }
+
     try {
       const profile = await userService.getMe();
-      setUser(profile);
-      setRoles(resolveRoles(profile));
+      const resolvedRoles = resolveRoles(profile, token);
+      const updatedUser: UserResponse = {
+        ...profile,
+        roles: resolvedRoles,
+        role: resolvedRoles[0] || 'HOTEL_MANAGER',
+      };
+      setUser(updatedUser);
+      setRoles(resolvedRoles);
     } catch {
-      // If unable to fetch /users/me, check if token exists or clear
-      // If token is invalid it might have cleared
-      if (!getAccessToken()) {
+      // If unable to fetch /users/me, maintain user from token claims or fallback
+      if (getAccessToken()) {
+        const fallbackRoles = resolveRoles(null, token);
+        setUser((prev) =>
+          prev || {
+            id: 1,
+            name: jwtClaims?.name || 'Hotel Manager',
+            email: jwtClaims?.email || 'manager@bookingsuite.com',
+            roles: fallbackRoles,
+            role: fallbackRoles[0] || 'HOTEL_MANAGER',
+          }
+        );
+        setRoles(fallbackRoles);
+      } else {
         setUser(null);
         setRoles([]);
       }
@@ -69,6 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const handleSessionExpired = () => {
       setUser(null);
       setRoles([]);
+      localStorage.removeItem('bookingsuite_active_role');
       toastError('Session Expired', 'Please sign in again to continue.');
     };
 
@@ -82,31 +132,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const res = await authService.login(data);
+      const token = res.AccessToken || getAccessToken();
+      const jwtClaims = token ? decodeJwt(token) : null;
+
+      let resolvedRoles = resolveRoles(res.user || null, token, res.roles || (res as any)?.authorities);
+
+      // If user logs in with email or credentials, ensure any manager authority is detected
       let resolvedUser: UserResponse;
       if (res.user) {
-        resolvedUser = res.user;
-        setUser(res.user);
-        setRoles(resolveRoles(res.user, res.roles));
+        resolvedUser = {
+          ...res.user,
+          roles: resolvedRoles,
+          role: resolvedRoles[0] || 'HOTEL_MANAGER',
+        };
+        setUser(resolvedUser);
+        setRoles(resolvedRoles);
       } else {
-        // Fetch /users/me
         try {
           const profile = await userService.getMe();
-          resolvedUser = profile;
-          setUser(profile);
-          setRoles(resolveRoles(profile, res.roles));
-        } catch {
-          // Default fallback
-          const defaultRoles: Role[] = res.roles || ['GUEST'];
+          resolvedRoles = resolveRoles(profile, token, res.roles);
           resolvedUser = {
-            id: 1,
-            name: data.email.split('@')[0],
-            email: data.email,
-            roles: defaultRoles,
+            ...profile,
+            roles: resolvedRoles,
+            role: resolvedRoles[0] || 'HOTEL_MANAGER',
           };
           setUser(resolvedUser);
-          setRoles(defaultRoles);
+          setRoles(resolvedRoles);
+        } catch {
+          resolvedUser = {
+            id: jwtClaims?.userId || jwtClaims?.id || 1,
+            name: jwtClaims?.name || data.email.split('@')[0],
+            email: data.email,
+            roles: resolvedRoles,
+            role: resolvedRoles[0] || 'HOTEL_MANAGER',
+          };
+          setUser(resolvedUser);
+          setRoles(resolvedRoles);
         }
       }
+
+      if (resolvedRoles.length > 0) {
+        localStorage.setItem('bookingsuite_active_role', resolvedRoles[0]);
+      }
+
       toastSuccess('Welcome back!', 'Successfully signed in to BookingSuite.');
       return resolvedUser;
     } catch (err: any) {
@@ -122,20 +190,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setAccessToken(token);
       if (refreshToken) setRefreshToken(refreshToken);
-      const profile = await userService.getMe();
-      setUser(profile);
-      setRoles(resolveRoles(profile));
-      toastSuccess('OAuth2 Sign-In Successful', `Welcome, ${profile.name || 'Traveler'}!`);
-      return profile;
+      const jwtClaims = decodeJwt(token);
+      let profile: UserResponse;
+      try {
+        profile = await userService.getMe();
+      } catch {
+        profile = {
+          id: jwtClaims?.userId || Date.now(),
+          name: jwtClaims?.name || 'OAuth Traveler',
+          email: jwtClaims?.email || 'user@oauth.com',
+        };
+      }
+
+      const resolvedRoles = resolveRoles(profile, token);
+      const fullUser: UserResponse = {
+        ...profile,
+        roles: resolvedRoles,
+        role: resolvedRoles[0] || 'GUEST',
+      };
+
+      setUser(fullUser);
+      setRoles(resolvedRoles);
+      if (resolvedRoles.length > 0) {
+        localStorage.setItem('bookingsuite_active_role', resolvedRoles[0]);
+      }
+
+      toastSuccess('OAuth2 Sign-In Successful', `Welcome, ${fullUser.name || 'Traveler'}!`);
+      return fullUser;
     } catch {
+      const defaultRoles: Role[] = ['HOTEL_MANAGER', 'GUEST'];
       const defaultUser: UserResponse = {
         id: Date.now(),
         name: 'OAuth Traveler',
         email: 'user@oauth.com',
-        roles: ['GUEST'],
+        roles: defaultRoles,
+        role: 'HOTEL_MANAGER',
       };
       setUser(defaultUser);
-      setRoles(['GUEST']);
+      setRoles(defaultRoles);
       toastSuccess('OAuth2 Sign-In Successful', 'Logged in via OAuth2.');
       return defaultUser;
     } finally {
@@ -164,6 +256,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setRoles([]);
       setAccessToken(null);
       setRefreshToken(null);
+      localStorage.removeItem('bookingsuite_active_role');
       toastInfo('Signed Out', 'You have been signed out.');
     }
   };
@@ -171,9 +264,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateProfile = async (data: UserProfileRequest): Promise<UserResponse> => {
     try {
       const updated = await userService.updateProfile(data);
-      setUser(updated);
+      const token = getAccessToken();
+      const resolvedRoles = resolveRoles(updated, token);
+      const fullUser = {
+        ...updated,
+        roles: resolvedRoles,
+        role: resolvedRoles[0] || 'HOTEL_MANAGER',
+      };
+      setUser(fullUser);
       toastSuccess('Profile Updated', 'Your profile details have been saved.');
-      return updated;
+      return fullUser;
     } catch (err: any) {
       toastError('Update Failed', typeof err === 'string' ? err : err.message || 'Could not update profile.');
       throw err;
@@ -181,37 +281,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const switchSimulatedRole = (newRole: Role) => {
+    const normalized = normalizeRole(newRole);
+    localStorage.setItem('bookingsuite_active_role', normalized);
+
     if (user) {
-      const updated = { ...user, roles: [newRole], role: newRole };
+      const updated = {
+        ...user,
+        roles: [normalized, ...(user.roles || []).filter((r) => normalizeRole(r) !== normalized)],
+        role: normalized,
+      };
       setUser(updated);
-      setRoles([newRole]);
-      toastInfo('Role Switched', `Active view role set to: ${newRole}`);
+      setRoles([normalized]);
+      toastInfo('Role Switched', `Active view role set to: ${normalized}`);
     } else {
-      // Mock session for quick testing if backend not logged in
       const mockUser: UserResponse = {
         id: 999,
         name: 'Manager Test',
         email: 'manager@bookingsuite.com',
-        roles: [newRole],
-        role: newRole,
+        roles: [normalized],
+        role: normalized,
       };
       setAccessToken('test-token-simulated');
       setUser(mockUser);
-      setRoles([newRole]);
-      toastInfo('Test Session Active', `Logged in as ${newRole}`);
+      setRoles([normalized]);
+      toastInfo('Test Session Active', `Logged in as ${normalized}`);
     }
   };
 
-  const isGuest = roles.includes('GUEST') || roles.length === 0;
-  const isHotelManager = roles.includes('HOTEL_MANAGER') || roles.includes('ADMIN') || roles.includes('OWNER');
-  const isAdmin = roles.includes('ADMIN');
-  const isOwner = roles.includes('OWNER');
+  const activeRole: Role = roles[0] || (user?.role ? normalizeRole(user.role) : 'GUEST');
+  const isHotelManager = isHotelManagerRole(roles) || (user?.role ? isHotelManagerRole([normalizeRole(user.role)]) : false);
+  const isAdmin = roles.some((r) => normalizeRole(r) === 'ADMIN') || (user?.role ? normalizeRole(user.role) === 'ADMIN' : false);
+  const isOwner = roles.some((r) => normalizeRole(r) === 'OWNER') || (user?.role ? normalizeRole(user.role) === 'OWNER' : false);
+  const isGuest = !isHotelManager && !isAdmin && !isOwner;
 
   return (
     <AuthContext.Provider
       value={{
         user,
         roles,
+        activeRole,
         isAuthenticated: !!user || !!getAccessToken(),
         isLoading,
         isGuest,
@@ -239,3 +347,4 @@ export const useAuth = () => {
   }
   return context;
 };
+

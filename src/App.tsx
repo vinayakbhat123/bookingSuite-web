@@ -93,6 +93,18 @@ export default function App() {
                     <Route path="reports" element={<HotelReportsPage />} />
                   </Route>
 
+                  {/* Route Aliases for Admin & Hotel Manager paths */}
+                  <Route path="/admin" element={<Navigate to="/manager" replace />} />
+                  <Route path="/admin/*" element={<Navigate to="/manager" replace />} />
+                  <Route path="/hotel_manager" element={<Navigate to="/manager" replace />} />
+                  <Route path="/hotel_manager/*" element={<Navigate to="/manager" replace />} />
+                  <Route path="/hotel-manager" element={<Navigate to="/manager" replace />} />
+                  <Route path="/hotel-manager/*" element={<Navigate to="/manager" replace />} />
+                  <Route path="/admin/hotel_manager" element={<Navigate to="/manager" replace />} />
+                  <Route path="/admin/hotel_manager/*" element={<Navigate to="/manager" replace />} />
+                  <Route path="/admin/hotel-manager" element={<Navigate to="/manager" replace />} />
+                  <Route path="/admin/hotel-manager/*" element={<Navigate to="/manager" replace />} />
+
                   {/* Fallback 404 */}
                   <Route
                     path="*"
