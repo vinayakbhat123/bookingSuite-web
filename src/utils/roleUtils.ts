@@ -2,7 +2,7 @@ import { Role, UserResponse } from '../types/api';
 
 /**
  * Normalizes any role string, authority object, or enum into standard Role types.
- * Handles Spring Boot prefixes (e.g. ROLE_HOTEL_MANAGER, ROLE_ADMIN, ROLE_GUEST),
+ * Handles role prefixes (e.g. ROLE_HOTEL_MANAGER, ROLE_ADMIN, ROLE_GUEST),
  * casing variations (e.g. hotel_manager, HotelManager), and alternative aliases.
  */
 export function normalizeRole(rawRole: any): Role {

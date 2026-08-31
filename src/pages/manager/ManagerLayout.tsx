@@ -83,7 +83,7 @@ export const ManagerLayout: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-slate-500">
-                Authoritative Spring Boot Control Plane
+                Property & Operations Management
               </p>
             </div>
           </div>

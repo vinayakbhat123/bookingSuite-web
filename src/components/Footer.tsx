@@ -17,7 +17,7 @@ export const Footer: React.FC = () => {
               </span>
             </div>
             <p className="text-slate-500 leading-relaxed">
-              Airbnb-style luxury hotel & room booking platform backed by authoritative Spring Boot REST architecture.
+              Luxury hotel & room booking platform with verified properties and real-time reservation management.
             </p>
           </div>
 

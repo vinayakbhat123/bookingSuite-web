@@ -164,7 +164,7 @@ export const HomePage: React.FC = () => {
       setErrorMsg(
         typeof err === 'string'
           ? err
-          : 'Could not connect to Spring Boot backend. Verify server is running on http://localhost:8080'
+          : 'Could not connect to backend server. Please verify your server is running and reachable.'
       );
       setFeaturedHotels([]);
     } finally {
@@ -272,7 +272,7 @@ export const HomePage: React.FC = () => {
               </span>
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Live room rates and inventory fetched directly from Spring Boot backend
+              Live room rates and inventory updated in real time
             </p>
           </div>
 
@@ -402,7 +402,7 @@ export const HomePage: React.FC = () => {
               Zero Hidden Markups.
             </h2>
             <p className="text-xs sm:text-sm text-slate-400">
-              Every room inventory record, price surge factor, and booking transition is authoritatively managed by our Spring Boot enterprise cluster.
+              Every room inventory record, price surge factor, and booking transition is authoritatively managed and verified in real time.
             </p>
           </div>
 
@@ -411,9 +411,9 @@ export const HomePage: React.FC = () => {
               <div className="w-10 h-10 rounded-2xl bg-rose-600/20 text-rose-400 flex items-center justify-center">
                 <ShieldCheck className="w-5 h-5" />
               </div>
-              <h3 className="font-bold text-sm text-white">Authoritative Backend Locks</h3>
+              <h3 className="font-bold text-sm text-white">Guaranteed Reservations</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Prevents double-booking collisions via Spring Boot transaction management and verified inventory reservations.
+                Prevents double-booking collisions via enterprise transaction management and verified inventory locks.
               </p>
             </div>
 

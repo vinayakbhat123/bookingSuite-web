@@ -432,7 +432,7 @@ export const BookingFlowPage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                   <Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span>Secure 256-bit encrypted Spring Boot Stripe payment processing.</span>
+                  <span>Secure 256-bit encrypted Stripe payment processing.</span>
                 </div>
               </div>
 

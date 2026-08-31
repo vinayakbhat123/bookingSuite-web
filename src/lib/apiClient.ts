@@ -254,7 +254,7 @@ export function extractErrorMessage(error: any): string {
   }
   if (error?.message) {
     if (error.message.includes('Network Error')) {
-      return `Cannot connect to backend server at ${getStoredBaseUrl()}. Please ensure your Spring Boot app is running.`;
+      return `Cannot connect to backend server at ${getStoredBaseUrl()}. Please ensure your backend server is running.`;
     }
     return error.message;
   }

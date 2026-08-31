@@ -97,7 +97,7 @@ export const ManagerDashboardPage: React.FC = () => {
             <span className="text-2xl font-extrabold text-emerald-600">
               {isLoadingReport ? '...' : formatCurrency(report?.TotalRevenue)}
             </span>
-            <span className="text-[11px] text-slate-400 block mt-0.5">Authoritative Spring Boot metric</span>
+            <span className="text-[11px] text-slate-400 block mt-0.5">Verified total revenue</span>
           </div>
         </div>
 

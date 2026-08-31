@@ -49,7 +49,7 @@ export const BackendConnectionBanner: React.FC<{ onOpenReport?: () => void }> = 
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-1.5 font-medium text-slate-300">
               <Database className="w-3.5 h-3.5 text-rose-400" />
-              <span>Spring Boot REST API:</span>
+              <span>Backend REST API:</span>
             </span>
 
             <button
@@ -112,7 +112,7 @@ export const BackendConnectionBanner: React.FC<{ onOpenReport?: () => void }> = 
       >
         <form onSubmit={handleSaveUrl} className="space-y-4">
           <p className="text-xs text-slate-600 leading-relaxed">
-            By default, BookingSuite connects to your local Spring Boot REST backend at{' '}
+            By default, BookingSuite connects to your local REST backend at{' '}
             <code className="bg-slate-100 px-1 py-0.5 rounded text-rose-600 font-mono">
               http://localhost:8080/api/v1
             </code>

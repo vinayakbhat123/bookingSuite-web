@@ -21,14 +21,14 @@ export const LoginPage: React.FC = () => {
   const queryParams = new URLSearchParams(location.search);
   const redirectUrl = queryParams.get('redirect') || '/';
 
-  // Check if redirected back with OAuth2 token from Spring Boot backend
+  // Check if redirected back with OAuth2 token from backend
   useEffect(() => {
     const token = queryParams.get('token') || queryParams.get('access_token');
     const refreshToken = queryParams.get('refreshToken');
     const errorParam = queryParams.get('error');
 
     if (errorParam) {
-      toastError('OAuth2 Failed', 'Authentication failed or user was not found.');
+      toastError('Authentication Failed', 'Authentication failed or user was not found.');
       navigate('/login', { replace: true });
       return;
     }
@@ -37,7 +37,7 @@ export const LoginPage: React.FC = () => {
       handleOAuthSuccess(token, refreshToken || undefined)
         .then((loggedUser) => {
           if (!loggedUser || (!loggedUser.email && !loggedUser.id)) {
-            toastError('No User Found', 'No user found in database. Please register.');
+            toastError('No Account Found', 'No account found with this profile. Please create an account.');
             navigate('/login', { replace: true });
             return;
           }
@@ -56,7 +56,7 @@ export const LoginPage: React.FC = () => {
           }
         })
         .catch(() => {
-          toastError('Login Error', 'Could not authenticate user profile.');
+          toastError('Sign In Error', 'Could not authenticate user profile.');
           navigate('/login', { replace: true });
         });
     }
@@ -65,7 +65,7 @@ export const LoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toastError('Validation Error', 'Please provide both email and password.');
+      toastError('Validation Error', 'Please enter your email and password.');
       return;
     }
 
@@ -99,11 +99,11 @@ export const LoginPage: React.FC = () => {
     const oauthEndpoint = `${backendServerRoot}/oauth2/authorization/google`;
 
     toastInfo(
-      'Google OAuth2',
-      `Redirecting to Spring Security OAuth2 endpoint: ${oauthEndpoint}`
+      'Google Sign-In',
+      'Redirecting to Google authentication...'
     );
 
-    // Attempt to redirect to Spring Boot OAuth2 authorization endpoint
+    // Attempt to redirect to Google OAuth2 authorization endpoint
     setTimeout(() => {
       window.location.href = oauthEndpoint;
     }, 300);
@@ -111,15 +111,15 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-slate-200 shadow-xl space-y-6">
+      <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-3xl p-8 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="w-12 h-12 rounded-2xl bg-rose-600 flex items-center justify-center text-white mx-auto shadow-md shadow-rose-600/20">
             <Building2 className="w-6 h-6" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Welcome to BookingSuite</h1>
-          <p className="text-xs text-slate-500">
-            Sign in with your backend credentials or Google account
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Sign In</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Welcome back. Sign in to access your bookings and saved stays.
           </p>
         </div>
 
@@ -130,7 +130,7 @@ export const LoginPage: React.FC = () => {
             type="button"
             onClick={handleGoogleOAuthLogin}
             disabled={isSubmitting || !!oauthLoading}
-            className="w-full py-2.5 px-4 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 flex items-center justify-center gap-3 transition-colors shadow-2xs disabled:opacity-50"
+            className="w-full py-2.5 px-4 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-center gap-3 transition-colors shadow-2xs disabled:opacity-50"
           >
             {oauthLoading === 'google' ? (
               <LoadingSpinner className="py-0" text="Redirecting to Google..." />
@@ -162,31 +162,31 @@ export const LoginPage: React.FC = () => {
 
         {/* Divider */}
         <div className="relative flex items-center justify-center">
-          <div className="border-t border-slate-200 w-full" />
-          <span className="bg-white px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-            or sign in with email
+          <div className="border-t border-slate-200 dark:border-slate-800 w-full" />
+          <span className="bg-white dark:bg-slate-900 px-3 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            or continue with email
           </span>
         </div>
 
         {/* Email & Password Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
             <div className="relative">
               <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder="name@example.com"
                 required
-                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Password</label>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Password</label>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
@@ -195,7 +195,7 @@ export const LoginPage: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
               />
             </div>
           </div>
@@ -206,18 +206,18 @@ export const LoginPage: React.FC = () => {
             className="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {isSubmitting ? (
-              <LoadingSpinner className="py-0" text="Authenticating with Backend..." />
+              <LoadingSpinner className="py-0" text="Signing in..." />
             ) : (
-              <span>Sign In with Spring Boot Backend →</span>
+              <span>Sign In →</span>
             )}
           </button>
         </form>
 
         {/* Footer */}
-        <div className="text-center text-xs text-slate-500 pt-2 border-t border-slate-100">
+        <div className="text-center text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
           Don't have an account?{' '}
-          <Link to="/signup" className="text-rose-600 font-bold hover:underline">
-            Sign up now
+          <Link to="/signup" className="text-rose-600 dark:text-rose-400 font-bold hover:underline">
+            Create an account
           </Link>
         </div>
       </div>

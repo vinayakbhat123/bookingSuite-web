@@ -46,7 +46,7 @@ export const SearchPage: React.FC = () => {
       const msg =
         typeof err === 'string'
           ? err
-          : 'Unable to query hotels from backend. Please verify that your Spring Boot server is reachable.';
+          : 'Unable to query hotels from backend. Please check your connection and try again.';
       setErrorMsg(msg);
       toastError('Search Error', msg);
     } finally {
