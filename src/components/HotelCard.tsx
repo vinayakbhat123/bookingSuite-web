@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Heart, MapPin, Sparkles, Star } from 'lucide-react';
+import { useSettings } from '../context/SettingsContext';
+import { useWishlist } from '../context/WishlistContext';
 import { HotelPriceDto } from '../types/api';
-import { formatCurrency } from '../utils/formatters';
 
 interface HotelCardProps {
   hotel: HotelPriceDto;
@@ -24,14 +25,10 @@ const DEFAULT_INDIAN_HOTEL_PHOTOS = [
 
 export const HotelCard: React.FC<HotelCardProps> = ({ hotel, searchContext }) => {
   const [currentPhotoIdx, setCurrentPhotoIdx] = useState(0);
-  const [isFavorited, setIsFavorited] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem(`fav_hotel_${hotel.hotelId}`);
-      return saved === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const { convertPrice } = useSettings();
+
+  const isFavorited = isInWishlist(hotel.hotelId);
 
   const photosList =
     hotel.photos && hotel.photos.length > 0
@@ -51,14 +48,10 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, searchContext }) =>
     queryParams.toString() ? `?${queryParams.toString()}` : ''
   }`;
 
-  const toggleFavorite = (e: React.MouseEvent) => {
+  const handleToggleFavorite = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const nextState = !isFavorited;
-    setIsFavorited(nextState);
-    try {
-      localStorage.setItem(`fav_hotel_${hotel.hotelId}`, String(nextState));
-    } catch {}
+    toggleWishlist(hotel);
   };
 
   const handlePrevPhoto = (e: React.MouseEvent) => {
@@ -77,6 +70,8 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, searchContext }) =>
   const ratingVal = (4.7 + (hotel.hotelId % 30) * 0.01).toFixed(2);
   const reviewsCount = 42 + (hotel.hotelId * 17) % 240;
   const isGuestFavorite = (hotel.hotelId % 2 === 0) || (hotel.price > 4000);
+
+  const priceObj = convertPrice(hotel.price);
 
   return (
     <Link
@@ -144,7 +139,7 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, searchContext }) =>
 
         {/* Wishlist Heart Button */}
         <button
-          onClick={toggleFavorite}
+          onClick={handleToggleFavorite}
           aria-label="Save to Wishlist"
           className="absolute top-3 right-3 p-2 rounded-full hover:scale-110 active:scale-95 transition-transform text-white drop-shadow-md focus:outline-none"
         >
@@ -183,10 +178,10 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, searchContext }) =>
           Individual Host · High-speed WiFi
         </p>
 
-        {/* Indian Rupee Pricing */}
+        {/* Dynamic Currency Pricing */}
         <div className="mt-2 flex items-baseline gap-1">
           <span className="text-sm font-extrabold text-slate-900">
-            {formatCurrency(hotel.price)}
+            {priceObj.formatted}
           </span>
           <span className="text-xs text-slate-600 font-normal">night</span>
         </div>

@@ -58,6 +58,17 @@ export const SearchPage: React.FC = () => {
     fetchSearchResults();
   }, [city, startDate, endDate, roomsCount, pageNumber]);
 
+  // Synchronize when hotels are added/updated in the manager portal
+  useEffect(() => {
+    const handleHotelsUpdate = () => {
+      fetchSearchResults();
+    };
+    window.addEventListener('bookingsuite_hotels_updated', handleHotelsUpdate);
+    return () => {
+      window.removeEventListener('bookingsuite_hotels_updated', handleHotelsUpdate);
+    };
+  }, [city, startDate, endDate, roomsCount, pageNumber]);
+
   const handlePageChange = (newPage: number) => {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set('page', String(newPage));

@@ -25,22 +25,40 @@ export const LoginPage: React.FC = () => {
   useEffect(() => {
     const token = queryParams.get('token') || queryParams.get('access_token');
     const refreshToken = queryParams.get('refreshToken');
-    if (token) {
-      handleOAuthSuccess(token, refreshToken || undefined).then((loggedUser) => {
-        const isManager =
-          loggedUser.roles?.includes('HOTEL_MANAGER') ||
-          loggedUser.roles?.includes('ADMIN') ||
-          loggedUser.role === 'HOTEL_MANAGER' ||
-          loggedUser.role === 'ADMIN';
+    const errorParam = queryParams.get('error');
 
-        if (isManager) {
-          navigate('/manager', { replace: true });
-        } else {
-          navigate(redirectUrl && !redirectUrl.startsWith('/manager') ? redirectUrl : '/', {
-            replace: true,
-          });
-        }
-      });
+    if (errorParam) {
+      toastError('OAuth2 Failed', 'Authentication failed or user was not found.');
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    if (token) {
+      handleOAuthSuccess(token, refreshToken || undefined)
+        .then((loggedUser) => {
+          if (!loggedUser || (!loggedUser.email && !loggedUser.id)) {
+            toastError('No User Found', 'No user found in database. Please register.');
+            navigate('/login', { replace: true });
+            return;
+          }
+
+          const isManager =
+            loggedUser.roles?.includes('HOTEL_MANAGER') ||
+            loggedUser.roles?.includes('ADMIN') ||
+            loggedUser.role === 'HOTEL_MANAGER' ||
+            loggedUser.role === 'ADMIN';
+
+          if (isManager) {
+            navigate('/manager', { replace: true });
+          } else {
+            // Redirect to landing page as requested
+            navigate('/', { replace: true });
+          }
+        })
+        .catch(() => {
+          toastError('Login Error', 'Could not authenticate user profile.');
+          navigate('/login', { replace: true });
+        });
     }
   }, [location.search]);
 

@@ -7,10 +7,13 @@ import { Navbar } from './components/Navbar';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ApiConfigProvider } from './context/ApiConfigContext';
 import { AuthProvider } from './context/AuthContext';
+import { SettingsProvider } from './context/SettingsContext';
 import { ToastProvider } from './context/ToastContext';
+import { WishlistProvider } from './context/WishlistContext';
 
 // Guest & Public Pages
 import { LoginPage } from './pages/auth/LoginPage';
+import { OAuthRedirectPage } from './pages/auth/OAuthRedirectPage';
 import { SignupPage } from './pages/auth/SignupPage';
 import { BookingFlowPage } from './pages/guest/BookingFlowPage';
 import { HomePage } from './pages/guest/HomePage';
@@ -18,6 +21,8 @@ import { HotelDetailsPage } from './pages/guest/HotelDetailsPage';
 import { MyBookingsPage } from './pages/guest/MyBookingsPage';
 import { ProfilePage } from './pages/guest/ProfilePage';
 import { SearchPage } from './pages/guest/SearchPage';
+import { SettingsPage } from './pages/guest/SettingsPage';
+import { WishlistPage } from './pages/guest/WishlistPage';
 
 // Manager Portal Pages
 import { CategoriesManagementPage } from './pages/manager/CategoriesManagementPage';
@@ -37,107 +42,116 @@ export default function App() {
     <ApiConfigProvider>
       <ToastProvider>
         <AuthProvider>
-          <BrowserRouter>
-            <div className="min-h-screen flex flex-col bg-white text-slate-900 font-sans antialiased selection:bg-rose-500 selection:text-white">
-              {/* Backend Status Top Bar */}
-              <BackendConnectionBanner onOpenReport={() => setIsReportModalOpen(true)} />
+          <SettingsProvider>
+            <WishlistProvider>
+              <BrowserRouter>
+                <div className="min-h-screen flex flex-col bg-white text-slate-900 font-sans antialiased selection:bg-rose-500 selection:text-white">
+                  {/* Backend Status Top Bar */}
+                  <BackendConnectionBanner onOpenReport={() => setIsReportModalOpen(true)} />
 
-              {/* Navigation Header */}
-              <Navbar onOpenReport={() => setIsReportModalOpen(true)} />
+                  {/* Navigation Header */}
+                  <Navbar onOpenReport={() => setIsReportModalOpen(true)} />
 
-              {/* Main App Content Views */}
-              <div className="flex-1">
-                <Routes>
-                  {/* Public Guest Routes */}
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/search" element={<SearchPage />} />
-                  <Route path="/hotels/:hotelId" element={<HotelDetailsPage />} />
-                  <Route path="/booking/flow" element={<BookingFlowPage />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/signup" element={<SignupPage />} />
+                  {/* Main App Content Views */}
+                  <div className="flex-1">
+                    <Routes>
+                      {/* Public Guest Routes */}
+                      <Route path="/" element={<HomePage />} />
+                      <Route path="/search" element={<SearchPage />} />
+                      <Route path="/hotels/:hotelId" element={<HotelDetailsPage />} />
+                      <Route path="/booking/flow" element={<BookingFlowPage />} />
+                      <Route path="/wishlist" element={<WishlistPage />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="/login" element={<LoginPage />} />
+                      <Route path="/signup" element={<SignupPage />} />
+                      <Route path="/oauth2/redirect" element={<OAuthRedirectPage />} />
+                      <Route path="/oauth2/callback" element={<OAuthRedirectPage />} />
 
-                  {/* Authenticated Guest Routes */}
-                  <Route
-                    path="/my-bookings"
-                    element={
-                      <ProtectedRoute>
-                        <MyBookingsPage />
-                      </ProtectedRoute>
-                    }
+                      {/* Authenticated Guest Routes */}
+                      <Route
+                        path="/my-bookings"
+                        element={
+                          <ProtectedRoute>
+                            <MyBookingsPage />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route
+                        path="/profile"
+                        element={
+                          <ProtectedRoute>
+                            <ProfilePage />
+                          </ProtectedRoute>
+                        }
+                      />
+
+                      {/* Hotel Manager & Admin Portal Routes */}
+                      <Route
+                        path="/manager"
+                        element={
+                          <ProtectedRoute allowedRoles={['HOTEL_MANAGER', 'ADMIN', 'OWNER']}>
+                            <ManagerLayout />
+                          </ProtectedRoute>
+                        }
+                      >
+                        <Route index element={<ManagerDashboardPage />} />
+                        <Route path="categories" element={<CategoriesManagementPage />} />
+                        <Route path="regions" element={<CuratedRegionsManagementPage />} />
+                        <Route path="hotels" element={<HotelsManagementPage />} />
+                        <Route path="rooms" element={<RoomsManagementPage />} />
+                        <Route path="inventory" element={<InventoryManagementPage />} />
+                        <Route path="bookings" element={<HotelBookingsPage />} />
+                        <Route path="reports" element={<HotelReportsPage />} />
+                      </Route>
+
+                      {/* Route Aliases for Admin & Hotel Manager paths */}
+                      <Route path="/admin" element={<Navigate to="/manager" replace />} />
+                      <Route path="/admin/*" element={<Navigate to="/manager" replace />} />
+                      <Route path="/hotel_manager" element={<Navigate to="/manager" replace />} />
+                      <Route path="/hotel_manager/*" element={<Navigate to="/manager" replace />} />
+                      <Route path="/hotel-manager" element={<Navigate to="/manager" replace />} />
+                      <Route path="/hotel-manager/*" element={<Navigate to="/manager" replace />} />
+                      <Route path="/admin/hotel_manager" element={<Navigate to="/manager" replace />} />
+                      <Route path="/admin/hotel_manager/*" element={<Navigate to="/manager" replace />} />
+                      <Route path="/admin/hotel-manager" element={<Navigate to="/manager" replace />} />
+                      <Route path="/admin/hotel-manager/*" element={<Navigate to="/manager" replace />} />
+
+                      {/* Fallback 404 */}
+                      <Route
+                        path="*"
+                        element={
+                          <div className="max-w-md mx-auto px-4 py-24 text-center space-y-4">
+                            <h2 className="text-3xl font-extrabold text-slate-900">404 - Not Found</h2>
+                            <p className="text-xs text-slate-500">
+                              The page you are looking for does not exist or has been moved.
+                            </p>
+                            <Link
+                              to="/"
+                              className="inline-block px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+                            >
+                              Return Home
+                            </Link>
+                          </div>
+                        }
+                      />
+                    </Routes>
+                  </div>
+
+                  {/* Global Footer */}
+                  <Footer onOpenReport={() => setIsReportModalOpen(true)} />
+
+                  {/* OpenAPI 31-Operation Verification Modal */}
+                  <ApiIntegrationReportModal
+                    isOpen={isReportModalOpen}
+                    onClose={() => setIsReportModalOpen(false)}
                   />
-                  <Route
-                    path="/profile"
-                    element={
-                      <ProtectedRoute>
-                        <ProfilePage />
-                      </ProtectedRoute>
-                    }
-                  />
-
-                  {/* Hotel Manager & Admin Portal Routes */}
-                  <Route
-                    path="/manager"
-                    element={
-                      <ProtectedRoute allowedRoles={['HOTEL_MANAGER', 'ADMIN', 'OWNER']}>
-                        <ManagerLayout />
-                      </ProtectedRoute>
-                    }
-                  >
-                    <Route index element={<ManagerDashboardPage />} />
-                    <Route path="categories" element={<CategoriesManagementPage />} />
-                    <Route path="regions" element={<CuratedRegionsManagementPage />} />
-                    <Route path="hotels" element={<HotelsManagementPage />} />
-                    <Route path="rooms" element={<RoomsManagementPage />} />
-                    <Route path="inventory" element={<InventoryManagementPage />} />
-                    <Route path="bookings" element={<HotelBookingsPage />} />
-                    <Route path="reports" element={<HotelReportsPage />} />
-                  </Route>
-
-                  {/* Route Aliases for Admin & Hotel Manager paths */}
-                  <Route path="/admin" element={<Navigate to="/manager" replace />} />
-                  <Route path="/admin/*" element={<Navigate to="/manager" replace />} />
-                  <Route path="/hotel_manager" element={<Navigate to="/manager" replace />} />
-                  <Route path="/hotel_manager/*" element={<Navigate to="/manager" replace />} />
-                  <Route path="/hotel-manager" element={<Navigate to="/manager" replace />} />
-                  <Route path="/hotel-manager/*" element={<Navigate to="/manager" replace />} />
-                  <Route path="/admin/hotel_manager" element={<Navigate to="/manager" replace />} />
-                  <Route path="/admin/hotel_manager/*" element={<Navigate to="/manager" replace />} />
-                  <Route path="/admin/hotel-manager" element={<Navigate to="/manager" replace />} />
-                  <Route path="/admin/hotel-manager/*" element={<Navigate to="/manager" replace />} />
-
-                  {/* Fallback 404 */}
-                  <Route
-                    path="*"
-                    element={
-                      <div className="max-w-md mx-auto px-4 py-24 text-center space-y-4">
-                        <h2 className="text-3xl font-extrabold text-slate-900">404 - Not Found</h2>
-                        <p className="text-xs text-slate-500">
-                          The page you are looking for does not exist or has been moved.
-                        </p>
-                        <Link
-                          to="/"
-                          className="inline-block px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
-                        >
-                          Return Home
-                        </Link>
-                      </div>
-                    }
-                  />
-                </Routes>
-              </div>
-
-              {/* Global Footer */}
-              <Footer onOpenReport={() => setIsReportModalOpen(true)} />
-
-              {/* OpenAPI 31-Operation Verification Modal */}
-              <ApiIntegrationReportModal
-                isOpen={isReportModalOpen}
-                onClose={() => setIsReportModalOpen(false)}
-              />
-            </div>
-          </BrowserRouter>
+                </div>
+              </BrowserRouter>
+            </WishlistProvider>
+          </SettingsProvider>
         </AuthProvider>
       </ToastProvider>
     </ApiConfigProvider>
   );
 }
+

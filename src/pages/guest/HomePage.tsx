@@ -104,6 +104,17 @@ export const HomePage: React.FC = () => {
     };
   }, []);
 
+  // Synchronize dynamic hotel updates created or modified in Hotel Manager
+  useEffect(() => {
+    const handleHotelsUpdate = () => {
+      loadHotels(selectedCity);
+    };
+    window.addEventListener('bookingsuite_hotels_updated', handleHotelsUpdate);
+    return () => {
+      window.removeEventListener('bookingsuite_hotels_updated', handleHotelsUpdate);
+    };
+  }, [selectedCity]);
+
   // Auto-redirect Hotel Manager to manager admin portal
   useEffect(() => {
     if (isAuthenticated && isHotelManager) {
