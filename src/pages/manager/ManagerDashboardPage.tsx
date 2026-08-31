@@ -7,16 +7,20 @@ import {
   BedDouble,
   Building2,
   CalendarCheck,
+  Check,
   CheckCircle2,
   Compass,
   DollarSign,
   Layers,
   MapPin,
   Plus,
+  Power,
+  RefreshCw,
   Sparkles,
   TrendingUp,
 } from 'lucide-react';
 import { LoadingSpinner } from '../../components/LoadingSkeleton';
+import { useToast } from '../../context/ToastContext';
 import { hotelService } from '../../services/hotelService';
 import { reportService } from '../../services/reportService';
 import { HotelReport, HotelResponse } from '../../types/api';
@@ -45,6 +49,23 @@ export const ManagerDashboardPage: React.FC<ManagerDashboardPageProps> = ({
 
   const [report, setReport] = useState<HotelReport | null>(null);
   const [isLoadingReport, setIsLoadingReport] = useState<boolean>(false);
+  const [activatingHotelId, setActivatingHotelId] = useState<number | null>(null);
+  const { success: toastSuccess, error: toastError } = useToast();
+
+  const handleActivateHotel = async (hotel: HotelResponse) => {
+    if (activatingHotelId !== null || hotel.active) {
+      return;
+    }
+    setActivatingHotelId(hotel.id);
+    try {
+      await hotelService.activateHotel(hotel.id);
+      toastSuccess('Hotel Activated', `${hotel.hotelName} has been successfully activated.`);
+    } catch (err: any) {
+      toastError('Activation Failed', typeof err === 'string' ? err : err.message);
+    } finally {
+      setActivatingHotelId(null);
+    }
+  };
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -263,15 +284,32 @@ export const ManagerDashboardPage: React.FC<ManagerDashboardPageProps> = ({
                   <td className="py-3.5 px-6 text-slate-600">{hotel.cityName}</td>
                   <td className="py-3.5 px-6 text-slate-500">{hotel.contactInfo?.email || '—'}</td>
                   <td className="py-3.5 px-6">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                        hotel.active !== false
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : 'bg-slate-100 text-slate-600 border-slate-200'
-                      }`}
-                    >
-                      {hotel.active !== false ? 'ACTIVE' : 'INACTIVE'}
-                    </span>
+                    {Boolean(hotel.active) ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[10px] font-bold">
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        <span>ACTIVE</span>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={activatingHotelId === hotel.id}
+                        onClick={() => handleActivateHotel(hotel)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[10px] font-bold shadow-xs transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                        title="Click once to activate hotel (PATCH /admin/hotels/{id}/activate)"
+                      >
+                        {activatingHotelId === hotel.id ? (
+                          <>
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                            <span>Activating...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Power className="w-3 h-3" />
+                            <span>Activate</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                   </td>
                   <td className="py-3.5 px-6 text-right">
                     {navigateTo ? (

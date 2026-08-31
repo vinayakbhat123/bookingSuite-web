@@ -9,6 +9,12 @@ import {
   RoomResponse,
 } from '../types/api';
 
+function parseBoolean(val: any): boolean | null {
+  if (val === true || val === 'true' || val === 1 || val === '1') return true;
+  if (val === false || val === 'false' || val === 0 || val === '0') return false;
+  return null;
+}
+
 /**
  * Clean data normalizer for HotelResponse from the backend
  */
@@ -21,7 +27,7 @@ export function normalizeHotelResponse(raw: any): HotelResponse {
       photos: [],
       amenities: [],
       contactInfo: { address: '', phoneNumber: '', email: '', location: '' },
-      active: true,
+      active: false,
     };
   }
 
@@ -67,14 +73,25 @@ export function normalizeHotelResponse(raw: any): HotelResponse {
     location: raw.contactInfo?.location ?? raw.location ?? '',
   };
 
-  const active =
-    raw.active !== undefined
-      ? Boolean(raw.active)
-      : raw.isActive !== undefined
-      ? Boolean(raw.isActive)
-      : raw.status === 'INACTIVE'
-      ? false
-      : true;
+  let active = false;
+  const directActive =
+    parseBoolean(raw.active) ??
+    parseBoolean(raw.isActive) ??
+    parseBoolean(raw.isActivated) ??
+    parseBoolean(raw.activated) ??
+    parseBoolean(raw.enabled);
+
+  if (directActive !== null) {
+    active = directActive;
+  } else if (typeof raw.status === 'string') {
+    const s = raw.status.toUpperCase();
+    if (s === 'ACTIVE' || s === 'ACTIVATED' || s === 'AVAILABLE') active = true;
+    else if (s === 'INACTIVE' || s === 'DEACTIVATED' || s === 'DISABLED' || s === 'PENDING') active = false;
+  } else if (typeof raw.hotelStatus === 'string') {
+    const s = raw.hotelStatus.toUpperCase();
+    if (s === 'ACTIVE' || s === 'ACTIVATED' || s === 'AVAILABLE') active = true;
+    else if (s === 'INACTIVE' || s === 'DEACTIVATED' || s === 'DISABLED' || s === 'PENDING') active = false;
+  }
 
   return {
     id,
@@ -278,7 +295,20 @@ export const hotelService = {
    */
   async activateHotel(id: number): Promise<HotelResponse> {
     const raw = await adminApi.activateHotel(id);
-    const result = normalizeHotelResponse(raw);
+    let result: HotelResponse;
+    if (raw && typeof raw === 'object' && (raw.id || raw.hotelName)) {
+      result = normalizeHotelResponse(raw);
+    } else {
+      result = {
+        id,
+        hotelName: '',
+        cityName: '',
+        photos: [],
+        amenities: [],
+        contactInfo: { address: '', phoneNumber: '', email: '', location: '' },
+        active: true,
+      };
+    }
     try {
       window.dispatchEvent(new CustomEvent('bookingsuite_hotels_updated'));
     } catch {}
@@ -298,10 +328,16 @@ export const hotelService = {
   },
 
   /**
-   * GET /hotels/allhotels
-   * Public get all hotels catalog used across Admin Dashboard and Home Page
+   * GET /hotels/allhotels & /admin/hotels/owner
+   * Catalog used across Admin Dashboard and Manager Pages
    */
   async getAdminHotels(): Promise<HotelResponse[]> {
+    try {
+      const ownerList = await adminApi.getOwnerHotels();
+      if (Array.isArray(ownerList) && ownerList.length > 0) {
+        return ownerList.map(normalizeHotelResponse);
+      }
+    } catch {}
     return this.getAllHotels();
   },
 

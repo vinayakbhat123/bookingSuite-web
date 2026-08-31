@@ -38,6 +38,7 @@ export const HotelsManagementPage: React.FC<HotelsManagementPageProps> = ({ onHo
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editingHotelId, setEditingHotelId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [activatingHotelId, setActivatingHotelId] = useState<number | null>(null);
 
   // Form State matching HotelRequest
   const [formData, setFormData] = useState<HotelRequest>({
@@ -51,7 +52,7 @@ export const HotelsManagementPage: React.FC<HotelsManagementPageProps> = ({ onHo
       email: '',
       location: '',
     },
-    active: true,
+    active: false,
   });
 
   const [photosInput, setPhotosInput] = useState<string>('');
@@ -94,7 +95,7 @@ export const HotelsManagementPage: React.FC<HotelsManagementPageProps> = ({ onHo
         email: '',
         location: '',
       },
-      active: true,
+      active: false,
     });
     setPhotosInput('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800');
     setAmenitiesInput('WIFI, SWIMMING_POOL, FITNESS_CENTER, RESTAURANT');
@@ -104,26 +105,54 @@ export const HotelsManagementPage: React.FC<HotelsManagementPageProps> = ({ onHo
   const handleOpenEditModal = async (hotelId: number) => {
     setIsEditing(true);
     setEditingHotelId(hotelId);
+
+    // Immediately prefill from local state to ensure responsive UI
+    const existing = hotels.find((h) => h.id === hotelId);
+    if (existing) {
+      setFormData({
+        id: existing.id,
+        hotelName: existing.hotelName || '',
+        cityName: existing.cityName || '',
+        photos: existing.photos || [],
+        amenities: existing.amenities || [],
+        contactInfo: {
+          address: existing.contactInfo?.address || '',
+          phoneNumber: existing.contactInfo?.phoneNumber || '',
+          email: existing.contactInfo?.email || '',
+          location: existing.contactInfo?.location || '',
+        },
+        active: Boolean(existing.active),
+      });
+      setPhotosInput(existing.photos?.join('\n') || '');
+      setAmenitiesInput(existing.amenities?.join(', ') || '');
+      setIsModalOpen(true);
+    }
+
     try {
       const hotel = await hotelService.getAdminHotelById(hotelId);
-      setFormData({
-        hotelName: hotel.hotelName || '',
-        cityName: hotel.cityName || '',
-        photos: hotel.photos || [],
-        amenities: hotel.amenities || [],
-        contactInfo: {
-          address: hotel.contactInfo?.address || '',
-          phoneNumber: hotel.contactInfo?.phoneNumber || '',
-          email: hotel.contactInfo?.email || '',
-          location: hotel.contactInfo?.location || '',
-        },
-        active: hotel.active !== false,
-      });
-      setPhotosInput(hotel.photos?.join('\n') || '');
-      setAmenitiesInput(hotel.amenities?.join(', ') || '');
-      setIsModalOpen(true);
+      if (hotel) {
+        setFormData({
+          id: hotel.id,
+          hotelName: hotel.hotelName || '',
+          cityName: hotel.cityName || '',
+          photos: hotel.photos || [],
+          amenities: hotel.amenities || [],
+          contactInfo: {
+            address: hotel.contactInfo?.address || '',
+            phoneNumber: hotel.contactInfo?.phoneNumber || '',
+            email: hotel.contactInfo?.email || '',
+            location: hotel.contactInfo?.location || '',
+          },
+          active: Boolean(hotel.active),
+        });
+        setPhotosInput(hotel.photos?.join('\n') || '');
+        setAmenitiesInput(hotel.amenities?.join(', ') || '');
+        if (!existing) setIsModalOpen(true);
+      }
     } catch (err: any) {
-      toastError('Failed to load hotel details', typeof err === 'string' ? err : err.message);
+      if (!existing) {
+        toastError('Failed to load hotel details', typeof err === 'string' ? err : err.message);
+      }
     }
   };
 
@@ -142,13 +171,22 @@ export const HotelsManagementPage: React.FC<HotelsManagementPageProps> = ({ onHo
   };
 
   const handleActivateHotel = async (hotel: HotelResponse) => {
+    if (activatingHotelId !== null || hotel.active) {
+      return;
+    }
+    setActivatingHotelId(hotel.id);
     try {
       await hotelService.activateHotel(hotel.id);
+      setHotels((prev) =>
+        prev.map((h) => (h.id === hotel.id ? { ...h, active: true } : h))
+      );
       toastSuccess('Hotel Activated', `${hotel.hotelName} has been successfully activated.`);
       fetchHotels();
       onHotelChange?.();
     } catch (err: any) {
       toastError('Activation Failed', typeof err === 'string' ? err : err.message);
+    } finally {
+      setActivatingHotelId(null);
     }
   };
 
@@ -172,10 +210,24 @@ export const HotelsManagementPage: React.FC<HotelsManagementPageProps> = ({ onHo
       .map((a) => a.trim().toUpperCase().replace(/\s+/g, '_'))
       .filter((a) => a.length > 0);
 
+    // Sanitize phone number to digits or +digits matching backend regex ^\+?[0-9]{10,15}$
+    const rawPhone = formData.contactInfo.phoneNumber.trim();
+    const cleanPhone = rawPhone.startsWith('+')
+      ? '+' + rawPhone.slice(1).replace(/\D/g, '')
+      : rawPhone.replace(/\D/g, '');
+
     const payload: HotelRequest = {
-      ...formData,
+      id: isEditing && editingHotelId ? editingHotelId : undefined,
+      hotelName: formData.hotelName.trim(),
+      cityName: formData.cityName.trim(),
       photos: photosList.length > 0 ? photosList : formData.photos,
       amenities: amenitiesList.length > 0 ? amenitiesList : formData.amenities,
+      contactInfo: {
+        address: formData.contactInfo.address.trim(),
+        phoneNumber: cleanPhone,
+        email: formData.contactInfo.email.trim(),
+        location: (formData.contactInfo.location || '').trim(),
+      },
     };
 
     setIsSubmitting(true);
@@ -298,7 +350,8 @@ export const HotelsManagementPage: React.FC<HotelsManagementPageProps> = ({ onHo
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredHotels.map((hotel) => {
-                  const isActive = hotel.active !== false;
+                  const isActive = Boolean(hotel.active);
+                  const isActivating = activatingHotelId === hotel.id;
                   return (
                     <tr key={hotel.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="py-4 px-6 font-mono text-slate-400 font-bold">#{hotel.id}</td>
@@ -340,12 +393,23 @@ export const HotelsManagementPage: React.FC<HotelsManagementPageProps> = ({ onHo
                           </span>
                         ) : (
                           <button
+                            type="button"
+                            disabled={isActivating}
                             onClick={() => handleActivateHotel(hotel)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-[11px] font-bold shadow-xs transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-[11px] font-bold shadow-xs transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                             title="Click once to activate hotel (PATCH /admin/hotels/{id}/activate)"
                           >
-                            <Power className="w-3.5 h-3.5" />
-                            <span>Activate</span>
+                            {isActivating ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                <span>Activating...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Power className="w-3.5 h-3.5" />
+                                <span>Activate</span>
+                              </>
+                            )}
                           </button>
                         )}
                       </td>
