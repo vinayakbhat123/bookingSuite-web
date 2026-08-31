@@ -70,12 +70,8 @@ export const HomePage: React.FC = () => {
   const [regions, setRegions] = useState<CuratedRegion[]>(() =>
     regionService.getActiveRegions()
   );
-  const [activeCategory, setActiveCategory] = useState<string>(() =>
-    categories.length > 0 ? categories[0].id : 'cat-beachfront'
-  );
-  const [selectedCity, setSelectedCity] = useState<string>(() =>
-    categories.length > 0 ? categories[0].city : 'Goa'
-  );
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [selectedCity, setSelectedCity] = useState<string>('All');
   const [featuredHotels, setFeaturedHotels] = useState<HotelPriceDto[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -130,49 +126,32 @@ export const HomePage: React.FC = () => {
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      const cityQuery = cityToSearch === 'All' ? '' : cityToSearch;
-
-      // Primary: Query the public search API endpoint (POST /hotels/search)
-      const searchRes = await hotelService.searchHotels({
-        city: cityQuery,
-        startDate,
-        endDate,
-        roomsCount: 1,
-        pageNumber: 0,
-        pageSize: 24,
-      });
-
-      let loadedHotels: HotelPriceDto[] = searchRes?.content || [];
-
-      // If user is logged in as manager/admin and search returned 0 items, check admin catalogue
-      if (loadedHotels.length === 0 && (isAdmin || isHotelManager)) {
-        try {
-          const adminHotels: HotelResponse[] = await hotelService.getAdminHotels();
-          if (adminHotels && adminHotels.length > 0) {
-            loadedHotels = adminHotels.map((h) => ({
-              hotelId: h.id,
-              hotelName: h.hotelName,
-              cityName: h.cityName || 'India',
-              photos: h.photos && h.photos.length > 0 ? h.photos : undefined,
-              amenities: h.amenities && h.amenities.length > 0 ? h.amenities : undefined,
-              price: 2500 + ((h.id * 750) % 6000),
-            }));
-
-            if (cityQuery) {
-              loadedHotels = loadedHotels.filter(
-                (h) =>
-                  h.cityName.toLowerCase().includes(cityQuery.toLowerCase()) ||
-                  cityQuery.toLowerCase().includes(h.cityName.toLowerCase())
-              );
-            }
-          }
-        } catch {
-          // Ignore admin fallback error
-        }
+      // Primary: Query the public all-hotels catalog endpoint (GET /hotels/allhotels)
+      const allHotels = await hotelService.getAllHotels();
+      
+      let filtered = allHotels;
+      const cityQuery = cityToSearch && cityToSearch !== 'All' ? cityToSearch.trim().toLowerCase() : '';
+      
+      if (cityQuery) {
+        filtered = allHotels.filter(
+          (h) =>
+            h.cityName?.toLowerCase().includes(cityQuery) ||
+            cityQuery.includes(h.cityName?.toLowerCase()) ||
+            h.hotelName?.toLowerCase().includes(cityQuery)
+        );
       }
 
+      const loadedHotels: HotelPriceDto[] = filtered.map((h) => ({
+        hotelId: h.id,
+        hotelName: h.hotelName,
+        cityName: h.cityName,
+        photos: h.photos,
+        amenities: h.amenities,
+        price: (h as any).price ?? (h as any).basePrice ?? 0,
+      }));
+
       setFeaturedHotels(loadedHotels);
-      setTotalHotelsCount(searchRes?.totalElements ?? loadedHotels.length);
+      setTotalHotelsCount(loadedHotels.length);
     } catch (err: any) {
       console.warn('Unable to query hotels from backend:', err);
       setErrorMsg(
@@ -181,6 +160,7 @@ export const HomePage: React.FC = () => {
           : 'Could not retrieve hotels from backend server. Please verify your backend API connection.'
       );
       setFeaturedHotels([]);
+      setTotalHotelsCount(0);
     } finally {
       setIsLoading(false);
     }

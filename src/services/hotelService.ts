@@ -13,18 +13,18 @@ export function normalizeHotelResponse(raw: any): HotelResponse {
   if (!raw) {
     return {
       id: 0,
-      hotelName: 'Grand Hotel',
-      cityName: 'India',
-      photos: ['https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800'],
-      amenities: ['WIFI', 'SWIMMING_POOL', 'FITNESS_CENTER', 'RESTAURANT'],
+      hotelName: '',
+      cityName: '',
+      photos: [],
+      amenities: [],
       contactInfo: { address: '', phoneNumber: '', email: '', location: '' },
       active: true,
     };
   }
 
   const id = Number(raw.id ?? raw.hotelId ?? 0);
-  const hotelName = raw.hotelName || raw.name || raw.title || `Hotel #${id || '1'}`;
-  const cityName = raw.cityName || raw.city || raw.location || 'India';
+  const hotelName = raw.hotelName ?? raw.name ?? raw.title ?? '';
+  const cityName = raw.cityName ?? raw.city ?? raw.location ?? '';
 
   let photos: string[] = [];
   if (Array.isArray(raw.photos)) {
@@ -33,12 +33,8 @@ export function normalizeHotelResponse(raw: any): HotelResponse {
     photos = raw.images.map((p: any) => (typeof p === 'string' ? p : p?.url || p?.photoUrl || '')).filter(Boolean);
   } else if (Array.isArray(raw.photoUrls)) {
     photos = raw.photoUrls.filter(Boolean);
-  } else if (typeof raw.photos === 'string') {
+  } else if (typeof raw.photos === 'string' && raw.photos.trim()) {
     photos = raw.photos.split(',').map((s: string) => s.trim()).filter(Boolean);
-  }
-
-  if (photos.length === 0) {
-    photos = ['https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800'];
   }
 
   let amenities: string[] = [];
@@ -46,19 +42,15 @@ export function normalizeHotelResponse(raw: any): HotelResponse {
     amenities = raw.amenities.map((a: any) => (typeof a === 'string' ? a : a?.name || a?.amenity || '')).filter(Boolean);
   } else if (Array.isArray(raw.amenityList)) {
     amenities = raw.amenityList.filter(Boolean);
-  } else if (typeof raw.amenities === 'string') {
+  } else if (typeof raw.amenities === 'string' && raw.amenities.trim()) {
     amenities = raw.amenities.split(',').map((s: string) => s.trim()).filter(Boolean);
   }
 
-  if (amenities.length === 0) {
-    amenities = ['WIFI', 'SWIMMING_POOL', 'FITNESS_CENTER', 'RESTAURANT'];
-  }
-
   const contactInfo = {
-    address: raw.contactInfo?.address || raw.address || '',
-    phoneNumber: raw.contactInfo?.phoneNumber || raw.contactInfo?.phone || raw.phoneNumber || raw.phone || '',
-    email: raw.contactInfo?.email || raw.email || '',
-    location: raw.contactInfo?.location || raw.location || '',
+    address: raw.contactInfo?.address ?? raw.address ?? '',
+    phoneNumber: raw.contactInfo?.phoneNumber ?? raw.contactInfo?.phone ?? raw.phoneNumber ?? raw.phone ?? '',
+    email: raw.contactInfo?.email ?? raw.email ?? '',
+    location: raw.contactInfo?.location ?? raw.location ?? '',
   };
 
   const active = raw.active !== undefined
@@ -76,10 +68,10 @@ export function normalizeHotelResponse(raw: any): HotelResponse {
   };
 }
 
-export function normalizeHotelPriceDto(raw: any, defaultPrice = 3800): HotelPriceDto {
+export function normalizeHotelPriceDto(raw: any): HotelPriceDto {
   const hotelId = Number(raw.hotelId ?? raw.id ?? 0);
-  const hotelName = raw.hotelName || raw.name || raw.title || `Hotel #${hotelId || '1'}`;
-  const cityName = raw.cityName || raw.city || 'India';
+  const hotelName = raw.hotelName ?? raw.name ?? raw.title ?? '';
+  const cityName = raw.cityName ?? raw.city ?? '';
 
   let photos: string[] = [];
   if (Array.isArray(raw.photos)) {
@@ -88,26 +80,18 @@ export function normalizeHotelPriceDto(raw: any, defaultPrice = 3800): HotelPric
     photos = raw.images.map((p: any) => (typeof p === 'string' ? p : p?.url || '')).filter(Boolean);
   } else if (Array.isArray(raw.photoUrls)) {
     photos = raw.photoUrls.filter(Boolean);
-  } else if (typeof raw.photos === 'string') {
+  } else if (typeof raw.photos === 'string' && raw.photos.trim()) {
     photos = raw.photos.split(',').map((s: string) => s.trim()).filter(Boolean);
-  }
-
-  if (photos.length === 0) {
-    photos = ['https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800'];
   }
 
   let amenities: string[] = [];
   if (Array.isArray(raw.amenities)) {
     amenities = raw.amenities.map((a: any) => (typeof a === 'string' ? a : a?.name || '')).filter(Boolean);
-  } else if (typeof raw.amenities === 'string') {
+  } else if (typeof raw.amenities === 'string' && raw.amenities.trim()) {
     amenities = raw.amenities.split(',').map((s: string) => s.trim()).filter(Boolean);
   }
 
-  if (amenities.length === 0) {
-    amenities = ['WIFI', 'SWIMMING_POOL', 'FITNESS_CENTER', 'RESTAURANT'];
-  }
-
-  const price = Number(raw.price ?? raw.basePrice ?? raw.minPrice ?? defaultPrice);
+  const price = Number(raw.price ?? raw.basePrice ?? raw.minPrice ?? 0);
 
   return {
     hotelId,
@@ -120,25 +104,26 @@ export function normalizeHotelPriceDto(raw: any, defaultPrice = 3800): HotelPric
 }
 
 export function normalizeRoomResponse(raw: any, fallbackHotelId = 0): RoomResponse {
-  const id = Number(raw.id ?? raw.roomId ?? Date.now());
+  const id = Number(raw.id ?? raw.roomId ?? 0);
   const hotelId = Number(raw.hotelId ?? fallbackHotelId);
-  const roomType = raw.roomType || 'DELUXE';
-  const basePrice = Number(raw.basePrice ?? raw.price ?? 3500);
-  const totalCount = Number(raw.totalCount ?? raw.count ?? 10);
+  const roomNumber = raw.roomNumber ?? raw.number ?? '';
+  const roomType = raw.roomType || 'DOUBLE';
+  const basePrice = Number(raw.basePrice ?? raw.price ?? 0);
+  const totalCount = Number(raw.totalCount ?? raw.count ?? 1);
   const capacity = Number(raw.capacity ?? raw.maxGuests ?? 2);
-  const floor = raw.floor !== undefined ? Number(raw.floor) : 2;
+  const floor = raw.floor !== undefined ? Number(raw.floor) : 1;
 
   let photos: string[] = [];
   if (Array.isArray(raw.photos)) {
     photos = raw.photos.map((p: any) => (typeof p === 'string' ? p : p?.url || '')).filter(Boolean);
-  } else if (typeof raw.photos === 'string') {
+  } else if (typeof raw.photos === 'string' && raw.photos.trim()) {
     photos = raw.photos.split(',').map((s: string) => s.trim()).filter(Boolean);
   }
 
   let amenities: string[] = [];
   if (Array.isArray(raw.amenities)) {
     amenities = raw.amenities.map((a: any) => (typeof a === 'string' ? a : a?.name || '')).filter(Boolean);
-  } else if (typeof raw.amenities === 'string') {
+  } else if (typeof raw.amenities === 'string' && raw.amenities.trim()) {
     amenities = raw.amenities.split(',').map((s: string) => s.trim()).filter(Boolean);
   }
 
@@ -147,6 +132,7 @@ export function normalizeRoomResponse(raw: any, fallbackHotelId = 0): RoomRespon
   return {
     id,
     hotelId,
+    roomNumber,
     roomType,
     basePrice,
     totalCount,
@@ -392,7 +378,7 @@ export const hotelService = {
         const paged = itemsToUse.slice(startIndex, startIndex + pageSizeNum);
 
         const mappedContent: HotelPriceDto[] = paged.map((h) =>
-          normalizeHotelPriceDto(h, 2800 + ((h.id * 350) % 4500))
+          normalizeHotelPriceDto(h)
         );
 
         return {

@@ -231,7 +231,7 @@ export const HotelDetailsPage: React.FC = () => {
               </div>
             ) : (
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                High-speed WiFi, 24/7 Front Desk Concierge, Room Service, Air Conditioning.
+                No specific amenities listed for this property.
               </p>
             )}
           </div>

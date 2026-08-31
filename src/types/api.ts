@@ -79,12 +79,13 @@ export interface RoomRequest {
 export interface RoomResponse {
   id: number;
   hotelId?: number;
+  roomNumber?: string;
   roomType: RoomType;
   basePrice: number;
   totalCount: number;
   capacity: number;
   floor?: number;
-  roomStatus: RoomStatus;
+  roomStatus?: RoomStatus;
   status?: RoomStatus;
   photos: string[];
   amenities: string[];
