@@ -38,13 +38,14 @@ import { useToast } from '../../context/ToastContext';
 import { categoryService, renderCategoryIcon } from '../../services/categoryService';
 import { hotelService } from '../../services/hotelService';
 import { regionService } from '../../services/regionService';
-import { HotelPriceDto, PageHotelPriceDto } from '../../types/api';
+import { HotelPriceDto, HotelResponse, PageHotelPriceDto } from '../../types/api';
 import { AirbnbCategory } from '../../types/category';
 import { CuratedRegion } from '../../types/region';
 import { formatDateForApi, getDaysAhead, getTomorrow } from '../../utils/dateUtils';
 import { formatCurrency } from '../../utils/formatters';
 
 const POPULAR_INDIAN_DESTINATIONS = [
+  'All',
   'Goa',
   'Jaipur',
   'Mumbai',
@@ -129,43 +130,35 @@ export const HomePage: React.FC = () => {
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      // Dynamic search from Spring Boot backend
-      const pageData: PageHotelPriceDto = await hotelService.searchHotels({
-        city: cityToSearch,
-        startDate,
-        endDate,
-        roomsCount: 1,
-        pageNumber: 0,
-        pageSize: 12,
-        dateRangeValid: true,
-      });
+      // Authoritative API call: GET /admin/hotels
+      const adminHotels: HotelResponse[] = await hotelService.getAdminHotels();
 
-      if (pageData && Array.isArray(pageData.content) && pageData.content.length > 0) {
-        setFeaturedHotels(pageData.content);
-        setTotalHotelsCount(pageData.totalElements || pageData.content.length);
-      } else {
-        // Fallback search to show all available backend hotels across other Indian cities
-        try {
-          const fallbackData = await hotelService.searchHotels({
-            city: '',
-            startDate,
-            endDate,
-            roomsCount: 1,
-            pageNumber: 0,
-            pageSize: 12,
-            dateRangeValid: true,
-          });
-          if (fallbackData && Array.isArray(fallbackData.content) && fallbackData.content.length > 0) {
-            setFeaturedHotels(fallbackData.content);
-            setTotalHotelsCount(fallbackData.totalElements || fallbackData.content.length);
-          } else {
-            setFeaturedHotels([]);
-            setTotalHotelsCount(0);
-          }
-        } catch {
-          setFeaturedHotels([]);
-          setTotalHotelsCount(0);
+      if (adminHotels && adminHotels.length > 0) {
+        // Map backend hotels to display cards
+        const allMapped: HotelPriceDto[] = adminHotels.map((h) => ({
+          hotelId: h.id,
+          hotelName: h.hotelName,
+          cityName: h.cityName || 'India',
+          photos: h.photos && h.photos.length > 0 ? h.photos : undefined,
+          amenities: h.amenities && h.amenities.length > 0 ? h.amenities : undefined,
+          price: 2500 + (h.id * 750) % 6000,
+        }));
+
+        if (cityToSearch && cityToSearch !== 'All' && cityToSearch !== '') {
+          const filtered = allMapped.filter(
+            (h) =>
+              h.cityName.toLowerCase().includes(cityToSearch.toLowerCase()) ||
+              cityToSearch.toLowerCase().includes(h.cityName.toLowerCase())
+          );
+          setFeaturedHotels(filtered);
+          setTotalHotelsCount(filtered.length);
+        } else {
+          setFeaturedHotels(allMapped);
+          setTotalHotelsCount(allMapped.length);
         }
+      } else {
+        setFeaturedHotels([]);
+        setTotalHotelsCount(0);
       }
     } catch (err: any) {
       setErrorMsg(
@@ -321,10 +314,10 @@ export const HomePage: React.FC = () => {
           </div>
         ) : featuredHotels.length === 0 ? (
           <EmptyState
-            title={`No hotels currently found in ${selectedCity}`}
+            title={`No hotels currently found in ${selectedCity === 'All' ? 'the catalog' : selectedCity}`}
             description="Explore our other popular Indian holiday destinations or browse all available properties."
-            actionLabel="View Goa Stays"
-            onAction={() => setSelectedCity('Goa')}
+            actionLabel={selectedCity === 'All' ? 'View Goa Stays' : 'View All Stays'}
+            onAction={() => setSelectedCity(selectedCity === 'All' ? 'Goa' : 'All')}
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">

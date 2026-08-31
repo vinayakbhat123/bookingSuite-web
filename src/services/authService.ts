@@ -61,11 +61,17 @@ export const authService = {
   async logout(refreshToken?: string): Promise<void> {
     try {
       const tokenToUse = refreshToken || getRefreshToken();
-      await apiClient.post('/auth/logout', {
-        refreshToken: tokenToUse,
-      });
-    } catch {
-      // ignore logout network errors
+      if (tokenToUse) {
+        await apiClient.post('/auth/logout', {
+          refreshToken: tokenToUse,
+        });
+      } else {
+        await apiClient.post('/auth/logout', {
+          refreshToken: '',
+        });
+      }
+    } catch (err) {
+      console.warn('Backend POST /auth/logout notice:', err);
     } finally {
       setAccessToken(null);
       setRefreshToken(null);

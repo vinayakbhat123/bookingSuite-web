@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
   BedDouble,
@@ -21,9 +21,21 @@ import { HotelResponse } from '../../types/api';
 
 export const ManagerLayout: React.FC = () => {
   const location = useLocation();
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [hotels, setHotels] = useState<HotelResponse[]>([]);
   const [selectedHotelId, setSelectedHotelId] = useState<number | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      navigate('/login');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const loadHotels = async () => {
     try {
@@ -127,6 +139,20 @@ export const ManagerLayout: React.FC = () => {
                   </Link>
                 );
               })}
+
+              <div className="border-t border-slate-100 my-1 pt-1">
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <LogOut className="w-4 h-4 text-rose-500" />
+                    <span>{isLoggingOut ? 'Signing out...' : 'Sign Out'}</span>
+                  </div>
+                </button>
+              </div>
             </div>
 
             {/* Quick Stats Helper Widget */}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
   Bell,
@@ -45,10 +45,11 @@ import { Role } from '../../types/api';
 import { getRoleLabel } from '../../utils/formatters';
 
 export const SettingsPage: React.FC = () => {
-  const { user, activeRole, switchSimulatedRole, isHotelManager } = useAuth();
+  const { user, activeRole, switchSimulatedRole, isHotelManager, logout } = useAuth();
   const { settings, updateSetting, updateSettings, resetSettings, convertPrice, exportUserData } =
     useSettings();
   const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<'appearance' | 'privacy' | 'smart_features' | 'account'>(
     'appearance'
@@ -58,6 +59,17 @@ export const SettingsPage: React.FC = () => {
   const [is2faModalOpen, setIs2faModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      navigate('/login');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   // Password Form
   const [currentPassword, setCurrentPassword] = useState('');
@@ -646,6 +658,28 @@ export const SettingsPage: React.FC = () => {
               >
                 <Download className="w-4 h-4" />
                 <span>Download JSON Archive</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Session & Sign Out */}
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">Sign Out of Session</h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Revoke this session's refresh token on the backend and return to the login screen.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-xl transition-colors disabled:opacity-50"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>{isLoggingOut ? 'Signing Out...' : 'Sign Out Current Session'}</span>
               </button>
             </div>
           </div>

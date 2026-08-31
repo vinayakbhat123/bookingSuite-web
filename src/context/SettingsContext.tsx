@@ -90,23 +90,58 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const { success: toastSuccess, info: toastInfo } = useToast();
 
-  // Apply dark mode & theme class to html/document element
+  // Apply dark mode, accent color, and high-contrast classes to html/document element
   useEffect(() => {
     const root = document.documentElement;
+
+    const checkSystemDark = () => window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
     const isDark =
       settings.theme === 'dark' ||
-      (settings.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      (settings.theme === 'system' && checkSystemDark());
 
     if (isDark) {
       root.classList.add('dark');
+      root.setAttribute('data-mode', 'dark');
     } else {
       root.classList.remove('dark');
+      root.setAttribute('data-mode', 'light');
     }
+
+    if (settings.highContrast) {
+      root.classList.add('high-contrast');
+    } else {
+      root.classList.remove('high-contrast');
+    }
+
+    if (settings.reducedMotion) {
+      root.classList.add('reduced-motion');
+    } else {
+      root.classList.remove('reduced-motion');
+    }
+
+    root.setAttribute('data-accent', settings.accentColor || 'rose');
 
     // Save to local storage
     try {
       localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     } catch {}
+
+    // System theme change listener if set to system
+    if (settings.theme === 'system' && window.matchMedia) {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = () => {
+        if (mediaQuery.matches) {
+          root.classList.add('dark');
+          root.setAttribute('data-mode', 'dark');
+        } else {
+          root.classList.remove('dark');
+          root.setAttribute('data-mode', 'light');
+        }
+      };
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
   }, [settings]);
 
   const updateSetting = <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {

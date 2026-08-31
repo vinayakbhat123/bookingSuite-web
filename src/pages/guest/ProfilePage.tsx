@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   AlertCircle,
   Briefcase,
   Calendar,
   CheckCircle2,
+  LogOut,
   Mail,
   Phone,
   Save,
@@ -20,11 +21,23 @@ import { Role, UserProfileRequest, UserResponse } from '../../types/api';
 import { getRoleLabel } from '../../utils/formatters';
 
 export const ProfilePage: React.FC = () => {
-  const { user, refreshUser, roles, activeRole, switchSimulatedRole, isHotelManager } = useAuth();
+  const { user, refreshUser, roles, activeRole, switchSimulatedRole, isHotelManager, logout } = useAuth();
   const { success: toastSuccess, error: toastError } = useToast();
+  const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      navigate('/login');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const [formData, setFormData] = useState<UserProfileRequest>({
     name: '',
@@ -272,7 +285,17 @@ export const ProfilePage: React.FC = () => {
             />
           </div>
 
-          <div className="pt-4 border-t border-slate-100 flex justify-end">
+          <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors disabled:opacity-50"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>{isLoggingOut ? 'Signing out...' : 'Sign Out of Account'}</span>
+            </button>
+
             <button
               type="submit"
               disabled={isSaving}

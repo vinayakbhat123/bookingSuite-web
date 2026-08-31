@@ -304,14 +304,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    setIsLoading(true);
     try {
-      await authService.logout();
+      const storedRefreshToken = getRefreshToken();
+      await authService.logout(storedRefreshToken || undefined);
+    } catch (err) {
+      console.warn('Logout error during API call:', err);
     } finally {
       setUser(null);
       setRoles([]);
       setAccessToken(null);
       setRefreshToken(null);
       localStorage.removeItem('bookingsuite_active_role');
+      localStorage.removeItem('bookingsuite_access_token');
+      localStorage.removeItem('bookingsuite_refresh_token');
+      setIsLoading(false);
       toastInfo('Signed Out', 'You have been signed out.');
     }
   };

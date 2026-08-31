@@ -38,9 +38,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenReport }) => {
   const currencyInfo = CURRENCY_RATES[settings.currency] || CURRENCY_RATES.INR;
 
   const handleLogout = async () => {
-    await logout();
     setIsProfileDropdownOpen(false);
-    navigate('/');
+    setIsMenuOpen(false);
+    await logout();
+    navigate('/login');
   };
 
   // Determine home destination based on user role
