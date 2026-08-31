@@ -82,8 +82,7 @@ export const HotelReportsPage: React.FC<HotelReportsPageProps> = ({
         'Report Notice',
         typeof err === 'string' ? err : 'Unable to query /admin/hotels/{hotelId}/report'
       );
-      // Fallback display
-      setReport({ TotalBooking: 24, TotalRevenue: 10480, AverageRevenue: 436.66 });
+      setReport(null);
     } finally {
       setIsLoading(false);
     }

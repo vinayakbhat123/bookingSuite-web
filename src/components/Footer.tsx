@@ -2,7 +2,11 @@ import React from 'react';
 import { Building2, Globe, Heart, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+  onOpenReport?: () => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ onOpenReport }) => {
   return (
     <footer className="bg-white border-t border-slate-200 mt-auto text-slate-600 text-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -72,7 +76,17 @@ export const Footer: React.FC = () => {
               </li>
               <li className="flex items-center gap-1.5 text-slate-500">
                 <Globe className="w-4 h-4 text-sky-600" />
-                <span>31 OpenAPI Operations Verified</span>
+                {onOpenReport ? (
+                  <button
+                    type="button"
+                    onClick={onOpenReport}
+                    className="hover:text-rose-600 transition-colors text-left cursor-pointer underline-offset-2 hover:underline"
+                  >
+                    31 OpenAPI Operations Verified
+                  </button>
+                ) : (
+                  <span>31 OpenAPI Operations Verified</span>
+                )}
               </li>
             </ul>
           </div>

@@ -54,13 +54,17 @@ export const ManagerDashboardPage: React.FC<ManagerDashboardPageProps> = ({
         const rep = await reportService.getHotelReport(selectedHotelId);
         setReport(rep);
       } catch {
-        setReport({ TotalBooking: 18, TotalRevenue: 7420, AverageRevenue: 412.22 });
+        setReport(null);
       } finally {
         setIsLoadingReport(false);
       }
     };
     fetchReport();
   }, [selectedHotelId]);
+
+  const totalBookings = report?.totalBookings ?? report?.TotalBooking ?? report?.totalBooking ?? 0;
+  const totalRevenue = report?.totalRevenue ?? report?.TotalRevenue ?? 0;
+  const averageRevenue = report?.averageRevenue ?? report?.AverageRevenue ?? 0;
 
   return (
     <div className="space-y-8">
@@ -106,9 +110,9 @@ export const ManagerDashboardPage: React.FC<ManagerDashboardPageProps> = ({
           </div>
           <div>
             <span className="text-2xl font-extrabold text-slate-900">
-              {isLoadingReport ? '...' : report?.TotalBooking || 0}
+              {isLoadingReport ? '...' : totalBookings}
             </span>
-            <span className="text-[11px] text-slate-400 block mt-0.5">Hotel ID #{selectedHotelId || 1}</span>
+            <span className="text-[11px] text-slate-400 block mt-0.5">Hotel ID #{selectedHotelId || '—'}</span>
           </div>
         </div>
 
@@ -121,7 +125,7 @@ export const ManagerDashboardPage: React.FC<ManagerDashboardPageProps> = ({
           </div>
           <div>
             <span className="text-2xl font-extrabold text-emerald-600">
-              {isLoadingReport ? '...' : formatCurrency(report?.TotalRevenue)}
+              {isLoadingReport ? '...' : formatCurrency(totalRevenue)}
             </span>
             <span className="text-[11px] text-slate-400 block mt-0.5">Verified total revenue</span>
           </div>
@@ -136,7 +140,7 @@ export const ManagerDashboardPage: React.FC<ManagerDashboardPageProps> = ({
           </div>
           <div>
             <span className="text-2xl font-extrabold text-slate-900">
-              {isLoadingReport ? '...' : formatCurrency(report?.AverageRevenue)}
+              {isLoadingReport ? '...' : formatCurrency(averageRevenue)}
             </span>
             <span className="text-[11px] text-slate-400 block mt-0.5">Per settled booking stay</span>
           </div>
