@@ -39,11 +39,11 @@ export function getBackendServerRoot(baseUrl?: string): string {
 
 /**
  * Derives the exact Google OAuth2 authorization endpoint URL.
- * Defaults to: http://localhost:8080/oauth2/authorization/google
+ * Defaults to: http://localhost:8080/api/v1/oauth2/authorization/google
  */
 export function getGoogleOAuthAuthorizationUrl(baseUrl?: string): string {
   const serverRoot = getBackendServerRoot(baseUrl);
-  return `${serverRoot}/oauth2/authorization/google`;
+  return `${serverRoot}/api/v1/oauth2/authorization/google`;
 }
 
 /**
