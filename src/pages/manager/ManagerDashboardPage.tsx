@@ -22,11 +22,26 @@ import { reportService } from '../../services/reportService';
 import { HotelReport, HotelResponse } from '../../types/api';
 import { formatCurrency } from '../../utils/formatters';
 
-export const ManagerDashboardPage: React.FC = () => {
-  const { hotels, selectedHotelId } = useOutletContext<{
-    hotels: HotelResponse[];
-    selectedHotelId: number | null;
-  }>();
+export interface ManagerDashboardPageProps {
+  hotels?: HotelResponse[];
+  selectedHotelId?: number | null;
+  onNavigateSection?: (section: string) => void;
+}
+
+export const ManagerDashboardPage: React.FC<ManagerDashboardPageProps> = ({
+  hotels: propHotels,
+  selectedHotelId: propSelectedHotelId,
+  onNavigateSection,
+}) => {
+  const outletCtx = useOutletContext<{
+    hotels?: HotelResponse[];
+    selectedHotelId?: number | null;
+    onNavigateSection?: (section: string) => void;
+  }>() || {};
+
+  const hotels = propHotels ?? outletCtx.hotels ?? [];
+  const selectedHotelId = propSelectedHotelId ?? outletCtx.selectedHotelId ?? null;
+  const navigateTo = onNavigateSection ?? outletCtx.onNavigateSection;
 
   const [report, setReport] = useState<HotelReport | null>(null);
   const [isLoadingReport, setIsLoadingReport] = useState<boolean>(false);
@@ -59,13 +74,24 @@ export const ManagerDashboardPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link
-            to="/manager/hotels"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add New Hotel</span>
-          </Link>
+          {navigateTo ? (
+            <button
+              type="button"
+              onClick={() => navigateTo('hotels')}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add New Hotel</span>
+            </button>
+          ) : (
+            <Link
+              to="/manager"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add New Hotel</span>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -119,9 +145,10 @@ export const ManagerDashboardPage: React.FC = () => {
 
       {/* Quick Access Action Banners */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link
-          to="/manager/categories"
-          className="group p-5 bg-white rounded-3xl border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between space-y-3"
+        <button
+          type="button"
+          onClick={() => navigateTo ? navigateTo('categories') : undefined}
+          className="group text-left p-5 bg-white rounded-3xl border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between space-y-3 cursor-pointer"
         >
           <div className="flex items-center justify-between">
             <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl group-hover:scale-110 transition-transform">
@@ -133,11 +160,12 @@ export const ManagerDashboardPage: React.FC = () => {
             <h4 className="font-bold text-slate-900 text-sm">Homepage Categories</h4>
             <p className="text-xs text-slate-500 mt-0.5">Configure Airbnb-style exploration tabs & icons</p>
           </div>
-        </Link>
+        </button>
 
-        <Link
-          to="/manager/regions"
-          className="group p-5 bg-white rounded-3xl border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between space-y-3"
+        <button
+          type="button"
+          onClick={() => navigateTo ? navigateTo('regions') : undefined}
+          className="group text-left p-5 bg-white rounded-3xl border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between space-y-3 cursor-pointer"
         >
           <div className="flex items-center justify-between">
             <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl group-hover:scale-110 transition-transform">
@@ -149,11 +177,12 @@ export const ManagerDashboardPage: React.FC = () => {
             <h4 className="font-bold text-slate-900 text-sm">Featured Regions & Images</h4>
             <p className="text-xs text-slate-500 mt-0.5">Manage destination cards, photos, and price tags</p>
           </div>
-        </Link>
+        </button>
 
-        <Link
-          to="/manager/rooms"
-          className="group p-5 bg-white rounded-3xl border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between space-y-3"
+        <button
+          type="button"
+          onClick={() => navigateTo ? navigateTo('rooms') : undefined}
+          className="group text-left p-5 bg-white rounded-3xl border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between space-y-3 cursor-pointer"
         >
           <div className="flex items-center justify-between">
             <div className="p-3 bg-amber-50 text-amber-600 rounded-2xl group-hover:scale-110 transition-transform">
@@ -165,11 +194,12 @@ export const ManagerDashboardPage: React.FC = () => {
             <h4 className="font-bold text-slate-900 text-sm">Room Inventory Catalog</h4>
             <p className="text-xs text-slate-500 mt-0.5">Manage room tiers, capacities, and base pricing</p>
           </div>
-        </Link>
+        </button>
 
-        <Link
-          to="/manager/inventory"
-          className="group p-5 bg-white rounded-3xl border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between space-y-3"
+        <button
+          type="button"
+          onClick={() => navigateTo ? navigateTo('inventory') : undefined}
+          className="group text-left p-5 bg-white rounded-3xl border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between space-y-3 cursor-pointer"
         >
           <div className="flex items-center justify-between">
             <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl group-hover:scale-110 transition-transform">
@@ -181,7 +211,7 @@ export const ManagerDashboardPage: React.FC = () => {
             <h4 className="font-bold text-slate-900 text-sm">Surge Pricing & Timeline</h4>
             <p className="text-xs text-slate-500 mt-0.5">Update surge multipliers and unit counts</p>
           </div>
-        </Link>
+        </button>
       </div>
 
       {/* Hotel Portfolio Preview Table */}
@@ -191,12 +221,22 @@ export const ManagerDashboardPage: React.FC = () => {
             <h3 className="font-bold text-slate-900 text-base">Hotel Portfolio Snapshot</h3>
             <p className="text-xs text-slate-500">Properties retrieved from GET /admin/hotels</p>
           </div>
-          <Link
-            to="/manager/hotels"
-            className="text-xs font-bold text-rose-600 hover:underline"
-          >
-            Manage All ({hotels.length}) →
-          </Link>
+          {navigateTo ? (
+            <button
+              type="button"
+              onClick={() => navigateTo('hotels')}
+              className="text-xs font-bold text-rose-600 hover:underline cursor-pointer"
+            >
+              Manage All ({hotels.length}) →
+            </button>
+          ) : (
+            <Link
+              to="/manager"
+              className="text-xs font-bold text-rose-600 hover:underline"
+            >
+              Manage All ({hotels.length}) →
+            </Link>
+          )}
         </div>
 
         <div className="overflow-x-auto">
@@ -230,12 +270,22 @@ export const ManagerDashboardPage: React.FC = () => {
                     </span>
                   </td>
                   <td className="py-3.5 px-6 text-right">
-                    <Link
-                      to={`/manager/rooms`}
-                      className="text-xs font-semibold text-rose-600 hover:text-rose-700"
-                    >
-                      View Rooms →
-                    </Link>
+                    {navigateTo ? (
+                      <button
+                        type="button"
+                        onClick={() => navigateTo('rooms')}
+                        className="text-xs font-semibold text-rose-600 hover:text-rose-700 cursor-pointer"
+                      >
+                        View Rooms →
+                      </button>
+                    ) : (
+                      <Link
+                        to="/manager"
+                        className="text-xs font-semibold text-rose-600 hover:text-rose-700"
+                      >
+                        View Rooms →
+                      </Link>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -46,18 +46,18 @@ export const Footer: React.FC = () => {
             <h4 className="font-semibold text-slate-900 uppercase tracking-wider text-[11px] mb-3">Hotel Managers</h4>
             <ul className="space-y-2">
               <li>
-                <Link to="/manager/hotels" className="hover:text-rose-600 transition-colors">
-                  Property Portfolio
+                <Link to="/manager" className="hover:text-rose-600 transition-colors">
+                  Manager Workspace
                 </Link>
               </li>
               <li>
-                <Link to="/manager/inventory" className="hover:text-rose-600 transition-colors">
-                  Inventory & Surge Pricing
+                <Link to="/manager" className="hover:text-rose-600 transition-colors">
+                  Property Portfolio & Rooms
                 </Link>
               </li>
               <li>
-                <Link to="/manager/reports" className="hover:text-rose-600 transition-colors">
-                  Financial Analytics & Reports
+                <Link to="/manager" className="hover:text-rose-600 transition-colors">
+                  Inventory & Financial Reports
                 </Link>
               </li>
             </ul>

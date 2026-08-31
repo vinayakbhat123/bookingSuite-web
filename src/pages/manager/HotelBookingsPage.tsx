@@ -19,11 +19,22 @@ import { BookingResponse, GuestRequest, HotelResponse } from '../../types/api';
 import { formatDisplayDate } from '../../utils/dateUtils';
 import { formatCurrency, getRoomTypeLabel } from '../../utils/formatters';
 
-export const HotelBookingsPage: React.FC = () => {
-  const { hotels, selectedHotelId: outletHotelId } = useOutletContext<{
-    hotels: HotelResponse[];
-    selectedHotelId: number | null;
-  }>();
+export interface HotelBookingsPageProps {
+  hotels?: HotelResponse[];
+  selectedHotelId?: number | null;
+}
+
+export const HotelBookingsPage: React.FC<HotelBookingsPageProps> = ({
+  hotels: propHotels,
+  selectedHotelId: propSelectedHotelId,
+}) => {
+  const outletCtx = useOutletContext<{
+    hotels?: HotelResponse[];
+    selectedHotelId?: number | null;
+  }>() || {};
+
+  const hotels = propHotels ?? outletCtx.hotels ?? [];
+  const outletHotelId = propSelectedHotelId ?? outletCtx.selectedHotelId ?? null;
 
   const [activeHotelId, setActiveHotelId] = useState<number | null>(outletHotelId || null);
   const [bookings, setBookings] = useState<BookingResponse[]>([]);
@@ -39,7 +50,7 @@ export const HotelBookingsPage: React.FC = () => {
   const { error: toastError } = useToast();
 
   useEffect(() => {
-    if (outletHotelId && !activeHotelId) {
+    if (outletHotelId) {
       setActiveHotelId(outletHotelId);
     } else if (hotels.length > 0 && !activeHotelId) {
       setActiveHotelId(hotels[0].id);

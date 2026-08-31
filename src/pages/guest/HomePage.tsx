@@ -61,7 +61,7 @@ const POPULAR_INDIAN_DESTINATIONS = [
 ];
 
 export const HomePage: React.FC = () => {
-  const { isAuthenticated, isHotelManager, user } = useAuth();
+  const { isAuthenticated, isHotelManager, isAdmin, isOwner, user } = useAuth();
   const navigate = useNavigate();
 
   const [categories, setCategories] = useState<AirbnbCategory[]>(() =>
@@ -130,41 +130,55 @@ export const HomePage: React.FC = () => {
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      // Authoritative API call: GET /admin/hotels
-      const adminHotels: HotelResponse[] = await hotelService.getAdminHotels();
+      const cityQuery = cityToSearch === 'All' ? '' : cityToSearch;
 
-      if (adminHotels && adminHotels.length > 0) {
-        // Map backend hotels to display cards
-        const allMapped: HotelPriceDto[] = adminHotels.map((h) => ({
-          hotelId: h.id,
-          hotelName: h.hotelName,
-          cityName: h.cityName || 'India',
-          photos: h.photos && h.photos.length > 0 ? h.photos : undefined,
-          amenities: h.amenities && h.amenities.length > 0 ? h.amenities : undefined,
-          price: 2500 + (h.id * 750) % 6000,
-        }));
+      // Primary: Query the public search API endpoint (POST /hotels/search)
+      const searchRes = await hotelService.searchHotels({
+        city: cityQuery,
+        startDate,
+        endDate,
+        roomsCount: 1,
+        pageNumber: 0,
+        pageSize: 24,
+      });
 
-        if (cityToSearch && cityToSearch !== 'All' && cityToSearch !== '') {
-          const filtered = allMapped.filter(
-            (h) =>
-              h.cityName.toLowerCase().includes(cityToSearch.toLowerCase()) ||
-              cityToSearch.toLowerCase().includes(h.cityName.toLowerCase())
-          );
-          setFeaturedHotels(filtered);
-          setTotalHotelsCount(filtered.length);
-        } else {
-          setFeaturedHotels(allMapped);
-          setTotalHotelsCount(allMapped.length);
+      let loadedHotels: HotelPriceDto[] = searchRes?.content || [];
+
+      // If user is logged in as manager/admin and search returned 0 items, check admin catalogue
+      if (loadedHotels.length === 0 && (isAdmin || isHotelManager)) {
+        try {
+          const adminHotels: HotelResponse[] = await hotelService.getAdminHotels();
+          if (adminHotels && adminHotels.length > 0) {
+            loadedHotels = adminHotels.map((h) => ({
+              hotelId: h.id,
+              hotelName: h.hotelName,
+              cityName: h.cityName || 'India',
+              photos: h.photos && h.photos.length > 0 ? h.photos : undefined,
+              amenities: h.amenities && h.amenities.length > 0 ? h.amenities : undefined,
+              price: 2500 + ((h.id * 750) % 6000),
+            }));
+
+            if (cityQuery) {
+              loadedHotels = loadedHotels.filter(
+                (h) =>
+                  h.cityName.toLowerCase().includes(cityQuery.toLowerCase()) ||
+                  cityQuery.toLowerCase().includes(h.cityName.toLowerCase())
+              );
+            }
+          }
+        } catch {
+          // Ignore admin fallback error
         }
-      } else {
-        setFeaturedHotels([]);
-        setTotalHotelsCount(0);
       }
+
+      setFeaturedHotels(loadedHotels);
+      setTotalHotelsCount(searchRes?.totalElements ?? loadedHotels.length);
     } catch (err: any) {
+      console.warn('Unable to query hotels from backend:', err);
       setErrorMsg(
         typeof err === 'string'
           ? err
-          : 'Could not connect to backend server. Please verify your server is running and reachable.'
+          : 'Could not retrieve hotels from backend server. Please verify your backend API connection.'
       );
       setFeaturedHotels([]);
     } finally {

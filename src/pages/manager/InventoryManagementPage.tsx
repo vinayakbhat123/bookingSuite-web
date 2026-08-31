@@ -21,11 +21,22 @@ import { HotelResponse, InventoryDto, RoomResponse, UpdateInventoryRequest } fro
 import { formatDateForApi, formatDisplayDate, getDaysAhead } from '../../utils/dateUtils';
 import { formatCurrency, getRoomTypeLabel } from '../../utils/formatters';
 
-export const InventoryManagementPage: React.FC = () => {
-  const { hotels, selectedHotelId: outletHotelId } = useOutletContext<{
-    hotels: HotelResponse[];
-    selectedHotelId: number | null;
-  }>();
+export interface InventoryManagementPageProps {
+  hotels?: HotelResponse[];
+  selectedHotelId?: number | null;
+}
+
+export const InventoryManagementPage: React.FC<InventoryManagementPageProps> = ({
+  hotels: propHotels,
+  selectedHotelId: propSelectedHotelId,
+}) => {
+  const outletCtx = useOutletContext<{
+    hotels?: HotelResponse[];
+    selectedHotelId?: number | null;
+  }>() || {};
+
+  const hotels = propHotels ?? outletCtx.hotels ?? [];
+  const outletHotelId = propSelectedHotelId ?? outletCtx.selectedHotelId ?? null;
 
   const [activeHotelId, setActiveHotelId] = useState<number | null>(outletHotelId || null);
   const [rooms, setRooms] = useState<RoomResponse[]>([]);
@@ -45,7 +56,7 @@ export const InventoryManagementPage: React.FC = () => {
   const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
 
   useEffect(() => {
-    if (outletHotelId && !activeHotelId) {
+    if (outletHotelId) {
       setActiveHotelId(outletHotelId);
     } else if (hotels.length > 0 && !activeHotelId) {
       setActiveHotelId(hotels[0].id);

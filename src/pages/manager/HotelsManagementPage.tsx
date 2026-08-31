@@ -23,7 +23,11 @@ import { hotelService } from '../../services/hotelService';
 import { HotelRequest, HotelResponse } from '../../types/api';
 import { validateHotel } from '../../utils/validation';
 
-export const HotelsManagementPage: React.FC = () => {
+export interface HotelsManagementPageProps {
+  onHotelChange?: () => void;
+}
+
+export const HotelsManagementPage: React.FC<HotelsManagementPageProps> = ({ onHotelChange }) => {
   const [hotels, setHotels] = useState<HotelResponse[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [viewMode, setViewMode] = useState<'ALL' | 'OWNER'>('ALL');
@@ -131,6 +135,7 @@ export const HotelsManagementPage: React.FC = () => {
       await hotelService.deleteAdminHotel(hotelId);
       toastSuccess('Hotel Deleted', `Hotel #${hotelId} has been removed.`);
       fetchHotels();
+      onHotelChange?.();
     } catch (err: any) {
       toastError('Delete Failed', typeof err === 'string' ? err : err.message);
     }
@@ -141,6 +146,7 @@ export const HotelsManagementPage: React.FC = () => {
       await hotelService.activateHotel(hotel.id);
       toastSuccess('Hotel Activated', `${hotel.hotelName} has been successfully activated.`);
       fetchHotels();
+      onHotelChange?.();
     } catch (err: any) {
       toastError('Activation Failed', typeof err === 'string' ? err : err.message);
     }
@@ -183,6 +189,7 @@ export const HotelsManagementPage: React.FC = () => {
       }
       setIsModalOpen(false);
       fetchHotels();
+      onHotelChange?.();
     } catch (err: any) {
       toastError('Operation Failed', typeof err === 'string' ? err : err.message);
     } finally {

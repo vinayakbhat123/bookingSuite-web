@@ -30,13 +30,12 @@ export const SearchPage: React.FC = () => {
     setErrorMsg(null);
 
     const requestPayload: HotelSearchRequest = {
-      city,
+      city: city === 'All' ? '' : city,
       startDate,
       endDate,
       roomsCount,
       pageNumber,
       pageSize,
-      dateRangeValid: true,
     };
 
     try {

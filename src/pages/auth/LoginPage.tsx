@@ -5,6 +5,7 @@ import { LoadingSpinner } from '../../components/LoadingSkeleton';
 import { useApiConfig } from '../../context/ApiConfigContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { getGoogleOAuthAuthorizationUrl } from '../../utils/oauthUtils';
 
 export const LoginPage: React.FC = () => {
   const { login, handleOAuthSuccess } = useAuth();
@@ -95,15 +96,14 @@ export const LoginPage: React.FC = () => {
 
   const handleGoogleOAuthLogin = () => {
     setOauthLoading('google');
-    const backendServerRoot = baseUrl.replace(/\/api\/v1\/?$/, '');
-    const oauthEndpoint = `${backendServerRoot}/oauth2/authorization/google`;
+    const oauthEndpoint = getGoogleOAuthAuthorizationUrl(baseUrl);
 
     toastInfo(
       'Google Sign-In',
       'Redirecting to Google authentication...'
     );
 
-    // Attempt to redirect to Google OAuth2 authorization endpoint
+    // Redirect to backend Spring Security Google OAuth2 authorization endpoint
     setTimeout(() => {
       window.location.href = oauthEndpoint;
     }, 300);

@@ -33,11 +33,22 @@ import { HotelReport, HotelResponse } from '../../types/api';
 import { formatDateForApi, getDaysAhead } from '../../utils/dateUtils';
 import { formatCurrency } from '../../utils/formatters';
 
-export const HotelReportsPage: React.FC = () => {
-  const { hotels, selectedHotelId: outletHotelId } = useOutletContext<{
-    hotels: HotelResponse[];
-    selectedHotelId: number | null;
-  }>();
+export interface HotelReportsPageProps {
+  hotels?: HotelResponse[];
+  selectedHotelId?: number | null;
+}
+
+export const HotelReportsPage: React.FC<HotelReportsPageProps> = ({
+  hotels: propHotels,
+  selectedHotelId: propSelectedHotelId,
+}) => {
+  const outletCtx = useOutletContext<{
+    hotels?: HotelResponse[];
+    selectedHotelId?: number | null;
+  }>() || {};
+
+  const hotels = propHotels ?? outletCtx.hotels ?? [];
+  const outletHotelId = propSelectedHotelId ?? outletCtx.selectedHotelId ?? null;
 
   const [activeHotelId, setActiveHotelId] = useState<number | null>(outletHotelId || null);
 
@@ -53,7 +64,7 @@ export const HotelReportsPage: React.FC = () => {
   const { success: toastSuccess, error: toastError } = useToast();
 
   useEffect(() => {
-    if (outletHotelId && !activeHotelId) {
+    if (outletHotelId) {
       setActiveHotelId(outletHotelId);
     } else if (hotels.length > 0 && !activeHotelId) {
       setActiveHotelId(hotels[0].id);

@@ -162,61 +162,150 @@ export const hotelService = {
   /**
    * POST /hotels/search
    * Search hotels by city, date range, rooms count with pagination.
-   * Returns paginated hotel results containing hotel ID, hotel name, city name, and price.
+   * Public endpoint that does not require manager authentication.
    */
   async searchHotels(data: HotelSearchRequest): Promise<PageHotelPriceDto> {
+    const cityClean = data.city?.trim() === 'All' ? '' : (data.city?.trim() || '');
+    const pageNum = data.pageNumber ?? (data as any).page ?? 0;
+    const pageSizeNum = data.pageSize ?? (data as any).size ?? 10;
+
+    // Send clean payload matching standard Spring Boot / Jackson DTOs
+    const requestBody: Record<string, any> = {
+      city: cityClean,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      roomsCount: data.roomsCount || 1,
+      pageNumber: pageNum,
+      pageSize: pageSizeNum,
+      page: pageNum,
+      size: pageSizeNum,
+    };
+
     try {
-      const res = await apiClient.post<any, any>('/hotels/search', data);
-      const rawContent = res?.content ?? (res as any)?.data?.content ?? (Array.isArray(res) ? res : (Array.isArray((res as any)?.data) ? (res as any).data : null));
+      const res = await apiClient.post<any, any>('/hotels/search', requestBody);
       
+      const rawContent =
+        res?.content ??
+        (res as any)?.data?.content ??
+        (Array.isArray(res) ? res : null) ??
+        (Array.isArray((res as any)?.data) ? (res as any).data : null) ??
+        (Array.isArray((res as any)?.hotels) ? (res as any).hotels : null) ??
+        (Array.isArray((res as any)?.hotelDtoList) ? (res as any).hotelDtoList : null) ??
+        (Array.isArray((res as any)?.result) ? (res as any).result : null);
+
       if (Array.isArray(rawContent)) {
         const normalizedContent = rawContent.map((item) => normalizeHotelPriceDto(item));
+        const totalElements =
+          res?.totalElements ??
+          (res as any)?.total ??
+          (res as any)?.data?.totalElements ??
+          normalizedContent.length;
+        const totalPages =
+          res?.totalPages ??
+          (res as any)?.data?.totalPages ??
+          (Math.ceil(totalElements / pageSizeNum) || 1);
+
         return {
           content: normalizedContent,
-          totalElements: res?.totalElements ?? res?.total ?? normalizedContent.length,
-          totalPages: res?.totalPages ?? (Math.ceil(normalizedContent.length / (data.pageSize || 10)) || 1),
-          size: data.pageSize || 10,
-          number: data.pageNumber || 0,
-          last: (data.pageNumber || 0) + 1 >= (res?.totalPages || 1),
-          first: (data.pageNumber || 0) === 0,
+          totalElements,
+          totalPages,
+          size: pageSizeNum,
+          number: pageNum,
+          last: pageNum + 1 >= totalPages,
+          first: pageNum === 0,
           numberOfElements: normalizedContent.length,
           empty: normalizedContent.length === 0,
         };
       }
-    } catch {
-      // If backend search endpoint is not available or returns empty, query catalogue
+    } catch (err: any) {
+      console.warn('POST /hotels/search failed, attempting alternative public or admin hotel retrieval:', err);
     }
 
-    const allHotels = await this.getAdminHotels();
-    const cityQuery = data.city?.trim().toLowerCase() || '';
+    // Try GET /hotels (public hotel catalog endpoint if available on backend)
+    try {
+      const publicRes = await apiClient.get<any, any>('/hotels');
+      const publicList =
+        (Array.isArray(publicRes) ? publicRes : null) ??
+        (Array.isArray(publicRes?.content) ? publicRes.content : null) ??
+        (Array.isArray(publicRes?.data) ? publicRes.data : null) ??
+        (Array.isArray(publicRes?.hotels) ? publicRes.hotels : null);
 
-    const matchedHotels = allHotels.filter((h) => {
-      if (!cityQuery) return true;
-      const hotelCity = h.cityName?.toLowerCase() || '';
-      const hotelName = h.hotelName?.toLowerCase() || '';
-      return hotelCity.includes(cityQuery) || cityQuery.includes(hotelCity) || hotelName.includes(cityQuery);
-    });
+      if (Array.isArray(publicList) && publicList.length > 0) {
+        const normalized = publicList.map((h) => normalizeHotelPriceDto(h));
+        const matched = cityClean
+          ? normalized.filter(
+              (h) =>
+                h.cityName.toLowerCase().includes(cityClean.toLowerCase()) ||
+                cityClean.toLowerCase().includes(h.cityName.toLowerCase()) ||
+                h.hotelName.toLowerCase().includes(cityClean.toLowerCase())
+            )
+          : normalized;
 
-    const itemsToUse = matchedHotels.length > 0 ? matchedHotels : allHotels;
-    const pageNumber = data.pageNumber || 0;
-    const pageSize = data.pageSize || 10;
-    const startIndex = pageNumber * pageSize;
-    const paged = itemsToUse.slice(startIndex, startIndex + pageSize);
+        const startIndex = pageNum * pageSizeNum;
+        const paged = (matched.length > 0 ? matched : normalized).slice(startIndex, startIndex + pageSizeNum);
 
-    const mappedContent: HotelPriceDto[] = paged.map((h) =>
-      normalizeHotelPriceDto(h, 2800 + ((h.id * 350) % 4500))
-    );
+        return {
+          content: paged,
+          totalElements: (matched.length > 0 ? matched : normalized).length,
+          totalPages: Math.ceil((matched.length > 0 ? matched : normalized).length / pageSizeNum) || 1,
+          last: startIndex + pageSizeNum >= (matched.length > 0 ? matched : normalized).length,
+          size: pageSizeNum,
+          number: pageNum,
+          first: pageNum === 0,
+          numberOfElements: paged.length,
+          empty: paged.length === 0,
+        };
+      }
+    } catch {
+      // Ignore if /hotels is not present
+    }
+
+    // If authenticated as admin or manager, attempt GET /admin/hotels
+    try {
+      const allHotels = await this.getAdminHotels();
+      if (allHotels && allHotels.length > 0) {
+        const cityQuery = cityClean.toLowerCase();
+        const matchedHotels = allHotels.filter((h) => {
+          if (!cityQuery) return true;
+          const hotelCity = h.cityName?.toLowerCase() || '';
+          const hotelName = h.hotelName?.toLowerCase() || '';
+          return hotelCity.includes(cityQuery) || cityQuery.includes(hotelCity) || hotelName.includes(cityQuery);
+        });
+
+        const itemsToUse = matchedHotels.length > 0 ? matchedHotels : allHotels;
+        const startIndex = pageNum * pageSizeNum;
+        const paged = itemsToUse.slice(startIndex, startIndex + pageSizeNum);
+
+        const mappedContent: HotelPriceDto[] = paged.map((h) =>
+          normalizeHotelPriceDto(h, 2800 + ((h.id * 350) % 4500))
+        );
+
+        return {
+          content: mappedContent,
+          totalElements: itemsToUse.length,
+          totalPages: Math.ceil(itemsToUse.length / pageSizeNum) || 1,
+          last: startIndex + pageSizeNum >= itemsToUse.length,
+          size: pageSizeNum,
+          number: pageNum,
+          first: pageNum === 0,
+          numberOfElements: mappedContent.length,
+          empty: mappedContent.length === 0,
+        };
+      }
+    } catch {
+      // Ignored
+    }
 
     return {
-      content: mappedContent,
-      totalElements: itemsToUse.length,
-      totalPages: Math.ceil(itemsToUse.length / pageSize) || 1,
-      last: startIndex + pageSize >= itemsToUse.length,
-      size: pageSize,
-      number: pageNumber,
-      first: pageNumber === 0,
-      numberOfElements: mappedContent.length,
-      empty: mappedContent.length === 0,
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      last: true,
+      size: pageSizeNum,
+      number: pageNum,
+      first: true,
+      numberOfElements: 0,
+      empty: true,
     };
   },
 

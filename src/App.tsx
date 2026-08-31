@@ -24,16 +24,8 @@ import { SearchPage } from './pages/guest/SearchPage';
 import { SettingsPage } from './pages/guest/SettingsPage';
 import { WishlistPage } from './pages/guest/WishlistPage';
 
-// Manager Portal Pages
-import { CategoriesManagementPage } from './pages/manager/CategoriesManagementPage';
-import { CuratedRegionsManagementPage } from './pages/manager/CuratedRegionsManagementPage';
-import { HotelBookingsPage } from './pages/manager/HotelBookingsPage';
-import { HotelReportsPage } from './pages/manager/HotelReportsPage';
-import { HotelsManagementPage } from './pages/manager/HotelsManagementPage';
-import { InventoryManagementPage } from './pages/manager/InventoryManagementPage';
-import { ManagerDashboardPage } from './pages/manager/ManagerDashboardPage';
+// Manager Portal
 import { ManagerLayout } from './pages/manager/ManagerLayout';
-import { RoomsManagementPage } from './pages/manager/RoomsManagementPage';
 
 export default function App() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -85,7 +77,7 @@ export default function App() {
                         }
                       />
 
-                      {/* Hotel Manager & Admin Portal Routes */}
+                      {/* Hotel Manager & Admin Portal Route - Single Consolidated Application Shell */}
                       <Route
                         path="/manager"
                         element={
@@ -93,16 +85,8 @@ export default function App() {
                             <ManagerLayout />
                           </ProtectedRoute>
                         }
-                      >
-                        <Route index element={<ManagerDashboardPage />} />
-                        <Route path="categories" element={<CategoriesManagementPage />} />
-                        <Route path="regions" element={<CuratedRegionsManagementPage />} />
-                        <Route path="hotels" element={<HotelsManagementPage />} />
-                        <Route path="rooms" element={<RoomsManagementPage />} />
-                        <Route path="inventory" element={<InventoryManagementPage />} />
-                        <Route path="bookings" element={<HotelBookingsPage />} />
-                        <Route path="reports" element={<HotelReportsPage />} />
-                      </Route>
+                      />
+                      <Route path="/manager/*" element={<Navigate to="/manager" replace />} />
 
                       {/* Route Aliases for Admin & Hotel Manager paths */}
                       <Route path="/admin" element={<Navigate to="/manager" replace />} />

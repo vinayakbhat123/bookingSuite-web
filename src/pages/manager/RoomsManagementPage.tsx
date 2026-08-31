@@ -20,11 +20,22 @@ import { HotelResponse, RoomRequest, RoomResponse, RoomStatus, RoomType } from '
 import { formatCurrency, getRoomTypeLabel } from '../../utils/formatters';
 import { validateRoom } from '../../utils/validation';
 
-export const RoomsManagementPage: React.FC = () => {
-  const { hotels, selectedHotelId: outletHotelId } = useOutletContext<{
-    hotels: HotelResponse[];
-    selectedHotelId: number | null;
-  }>();
+export interface RoomsManagementPageProps {
+  hotels?: HotelResponse[];
+  selectedHotelId?: number | null;
+}
+
+export const RoomsManagementPage: React.FC<RoomsManagementPageProps> = ({
+  hotels: propHotels,
+  selectedHotelId: propSelectedHotelId,
+}) => {
+  const outletCtx = useOutletContext<{
+    hotels?: HotelResponse[];
+    selectedHotelId?: number | null;
+  }>() || {};
+
+  const hotels = propHotels ?? outletCtx.hotels ?? [];
+  const outletHotelId = propSelectedHotelId ?? outletCtx.selectedHotelId ?? null;
 
   const [activeHotelId, setActiveHotelId] = useState<number | null>(outletHotelId || null);
   const [rooms, setRooms] = useState<RoomResponse[]>([]);
@@ -54,7 +65,7 @@ export const RoomsManagementPage: React.FC = () => {
   const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
 
   useEffect(() => {
-    if (outletHotelId && !activeHotelId) {
+    if (outletHotelId) {
       setActiveHotelId(outletHotelId);
     } else if (hotels.length > 0 && !activeHotelId) {
       setActiveHotelId(hotels[0].id);
