@@ -36,6 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { error: toastError, success: toastSuccess, info: toastInfo } = useToast();
+  const oauthProcessedRef = React.useRef(false);
 
   const resolveRoles = (userObj: UserResponse | null, token?: string | null, explicitRoles?: any): Role[] => {
     const jwtClaims = token ? decodeJwt(token) : null;
@@ -55,9 +56,124 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshUser = useCallback(async () => {
+    // 1. Process OAuth2 tokens / errors from URL query parameters if arriving from OAuth redirect
+    if (!oauthProcessedRef.current && typeof window !== 'undefined' && window.location.search) {
+      const searchParams = new URLSearchParams(window.location.search);
+      const token =
+        searchParams.get('accessToken') ||
+        searchParams.get('token') ||
+        searchParams.get('access_token') ||
+        searchParams.get('AccessToken');
+      const refreshToken =
+        searchParams.get('refreshToken') ||
+        searchParams.get('refresh_token') ||
+        searchParams.get('RefreshToken');
+      const error =
+        searchParams.get('error') ||
+        searchParams.get('error_description') ||
+        searchParams.get('errorMessage');
+
+      if (token || error) {
+        oauthProcessedRef.current = true;
+
+        // Clean the tokens from the browser address bar immediately using History API
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('accessToken');
+          url.searchParams.delete('token');
+          url.searchParams.delete('access_token');
+          url.searchParams.delete('AccessToken');
+          url.searchParams.delete('refreshToken');
+          url.searchParams.delete('refresh_token');
+          url.searchParams.delete('RefreshToken');
+          url.searchParams.delete('error');
+          url.searchParams.delete('error_description');
+          url.searchParams.delete('errorMessage');
+
+          const remainingQuery = url.searchParams.toString();
+          const cleanUrl = url.pathname + (remainingQuery ? `?${remainingQuery}` : '') + (url.hash || '');
+          window.history.replaceState({}, document.title, cleanUrl || '/');
+        } catch {
+          window.history.replaceState({}, document.title, window.location.pathname || '/');
+        }
+
+        if (error) {
+          toastError('OAuth2 Sign-In Failed', decodeURIComponent(error));
+          setUser(null);
+          setRoles([]);
+          setAccessToken(null);
+          setRefreshToken(null);
+          setIsLoading(false);
+          return;
+        }
+
+        if (token) {
+          try {
+            setAccessToken(token);
+            if (refreshToken) {
+              setRefreshToken(refreshToken);
+            }
+
+            const jwtClaims = decodeJwt(token);
+            let profile: UserResponse | null = null;
+            try {
+              profile = await userService.getMe();
+            } catch (profileErr) {
+              console.warn('userService.getMe() error during OAuth initial load:', profileErr);
+            }
+
+            const resolvedRoles = resolveRoles(profile, token, jwtClaims?.roles);
+            const fullUser: UserResponse = {
+              id: profile?.id || jwtClaims?.userId || jwtClaims?.id || 1,
+              name: profile?.name || jwtClaims?.name || (jwtClaims?.sub?.includes('@') ? jwtClaims.sub.split('@')[0] : 'Traveler'),
+              email: profile?.email || jwtClaims?.email || (jwtClaims?.sub?.includes('@') ? jwtClaims.sub : 'user@bookingsuite.com'),
+              roles: resolvedRoles,
+              role: resolvedRoles[0] || 'GUEST',
+              ...(profile || {}),
+            };
+
+            setUser(fullUser);
+            setRoles(resolvedRoles);
+            if (resolvedRoles.length > 0) {
+              localStorage.setItem('bookingsuite_active_role', resolvedRoles[0]);
+            }
+
+            toastSuccess('OAuth2 Sign-In Successful', `Welcome, ${fullUser.name || 'Traveler'}!`);
+
+            const isManager = isHotelManagerRole(resolvedRoles);
+            const currentPath = window.location.pathname;
+
+            if (isManager) {
+              if (currentPath === '/' || currentPath.startsWith('/login') || currentPath.startsWith('/signup') || currentPath.startsWith('/oauth2')) {
+                window.location.replace('/manager');
+                return;
+              }
+            } else {
+              if (currentPath.startsWith('/login') || currentPath.startsWith('/signup') || currentPath.startsWith('/oauth2')) {
+                window.location.replace('/');
+                return;
+              }
+            }
+
+            setIsLoading(false);
+            return;
+          } catch (err: any) {
+            console.error('OAuth token processing error:', err);
+            toastError('OAuth2 Authentication Failed', typeof err === 'string' ? err : err.message || 'Invalid token received.');
+            setUser(null);
+            setRoles([]);
+            setAccessToken(null);
+            setRefreshToken(null);
+            setIsLoading(false);
+            return;
+          }
+        }
+      }
+    }
+
+    // 2. Standard Session Startup / Token Refresh Flow
     const storedRefreshToken = getRefreshToken();
 
-    // Call POST /auth/refresh using refreshToken to fetch new accessToken every time on login/startup
     if (storedRefreshToken) {
       try {
         const refreshRes = await authService.refresh(storedRefreshToken);
@@ -90,7 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         name: jwtClaims.name || jwtClaims.sub?.split('@')[0] || 'User',
         email: jwtClaims.email || (jwtClaims.sub?.includes('@') ? jwtClaims.sub : 'user@bookingsuite.com'),
         roles: initialRoles,
-        role: initialRoles[0] || 'HOTEL_MANAGER',
+        role: initialRoles[0] || 'GUEST',
       });
     }
 
@@ -100,7 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const updatedUser: UserResponse = {
         ...profile,
         roles: resolvedRoles,
-        role: resolvedRoles[0] || 'HOTEL_MANAGER',
+        role: resolvedRoles[0] || 'GUEST',
       };
       setUser(updatedUser);
       setRoles(resolvedRoles);
@@ -111,10 +227,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser((prev) =>
           prev || {
             id: 1,
-            name: jwtClaims?.name || 'Hotel Manager',
-            email: jwtClaims?.email || 'manager@bookingsuite.com',
+            name: jwtClaims?.name || 'Traveler',
+            email: jwtClaims?.email || 'user@bookingsuite.com',
             roles: fallbackRoles,
-            role: fallbackRoles[0] || 'HOTEL_MANAGER',
+            role: fallbackRoles[0] || 'GUEST',
           }
         );
         setRoles(fallbackRoles);
@@ -125,7 +241,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [toastError, toastSuccess]);
 
   useEffect(() => {
     refreshUser();
