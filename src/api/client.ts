@@ -57,7 +57,7 @@ export const setRefreshToken = (token: string | null): void => {
   }
 };
 
-// Global API Log Entry Interface for Dev Inspector & Monitoring
+/// Global API Log Entry Interface for Dev Inspector & Monitoring
 export interface ApiLogEntry {
   id: string;
   timestamp: string;
@@ -90,52 +90,97 @@ const notifyLog = (entry: ApiLogEntry) => {
   });
 };
 
-// Concurrency lock for token refreshing
-let isRefreshing = false;
-let refreshSubscribers: Array<(token: string | null) => void> = [];
+function sanitizeForLogging(data: any): any {
+  if (!data || typeof data !== 'object') return data;
+  if (Array.isArray(data)) return data.map(sanitizeForLogging);
+  const sensitiveKeys = new Set([
+    'password',
+    'accesstoken',
+    'refreshtoken',
+    'token',
+    'otp',
+    'otpcode',
+    'code',
+    'authorization',
+    'secret',
+    'clientsecret',
+    'stripekey',
+  ]);
+  const sanitized: Record<string, any> = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (sensitiveKeys.has(k.toLowerCase())) {
+      sanitized[k] = '[REDACTED]';
+    } else if (typeof v === 'object' && v !== null) {
+      sanitized[k] = sanitizeForLogging(v);
+    } else {
+      sanitized[k] = v;
+    }
+  }
+  return sanitized;
+}
 
-const onRefreshed = (token: string | null) => {
-  refreshSubscribers.forEach((callback) => callback(token));
-  refreshSubscribers = [];
-};
+// Single-flight shared Promise for token refreshing across concurrent 401s
+let refreshPromise: Promise<string | null> | null = null;
 
-const addRefreshSubscriber = (callback: (token: string | null) => void) => {
-  refreshSubscribers.push(callback);
-};
-
-/**
- * Checks whether a route is an exception that returns the raw DTO instead of the standard envelope.
- * Exceptions:
- * - All /admin/hotels CRUD (e.g. POST/PUT/DELETE /admin/hotels, GET /admin/hotels/owner, GET /admin/hotels/{id}/bookings)
- * - /hotels/{hotelId}
- * - /hotels/search
- * - /admin/hotels/{hotelId}/room (create/update)
- * - /hotels/{hotelId}/rooms/{roomId}
- */
-export function isRawDtoEndpoint(path: string): boolean {
-  const cleanPath = path.split('?')[0];
-
-  // /hotels/search -> raw PageHotelPriceDto
-  if (cleanPath === '/hotels/search' || cleanPath.endsWith('/hotels/search')) {
-    return true;
+async function executeTokenRefresh(): Promise<string | null> {
+  if (refreshPromise) {
+    return refreshPromise;
   }
 
-  // /hotels/{hotelId}/rooms/{roomId} -> raw RoomResponse
-  if (/^\/hotels\/\d+\/rooms\/\d+$/.test(cleanPath)) {
-    return true;
-  }
+  refreshPromise = (async () => {
+    try {
+      const currentRefreshToken = getRefreshToken();
+      const baseUrl = getBaseUrl();
+      const res = await fetch(`${baseUrl.replace(/\/$/, '')}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ refreshToken: currentRefreshToken || '' }),
+        credentials: 'include',
+      });
 
-  // /hotels/{hotelId} -> raw Hotel
-  if (/^\/hotels\/\d+$/.test(cleanPath)) {
-    return true;
-  }
+      if (!res.ok) {
+        throw new Error(`Refresh failed with status ${res.status}`);
+      }
 
-  // /admin/hotels/... -> raw DTOs
-  if (cleanPath.startsWith('/admin/hotels')) {
-    return true;
-  }
+      const body = await res.json();
+      const rawPayload = body?.data !== undefined ? body.data : body;
+      const newAccessToken =
+        rawPayload?.AccessToken ||
+        rawPayload?.accessToken ||
+        body?.AccessToken ||
+        body?.accessToken ||
+        null;
 
-  return false;
+      const newRefreshToken =
+        rawPayload?.refreshToken ||
+        rawPayload?.RefreshToken ||
+        body?.refreshToken ||
+        null;
+
+      if (newAccessToken) {
+        setAccessToken(newAccessToken);
+      }
+      if (newRefreshToken) {
+        setRefreshToken(newRefreshToken);
+      }
+
+      return newAccessToken;
+    } catch {
+      setAccessToken(null);
+      setRefreshToken(null);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('bookingsuite:session-expired'));
+      }
+      return null;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
 }
 
 export interface ApiFetchOptions extends RequestInit {
@@ -149,8 +194,8 @@ export interface ApiFetchOptions extends RequestInit {
  * 1. Appends query params & base URL
  * 2. Attaches Authorization header when AccessToken is present
  * 3. Sends credentials: 'include' (for httpOnly cookies)
- * 4. Automatically refreshes token on 401 and retries
- * 5. Detects and unwraps the {success, message, data, timestamp} envelope only when present
+ * 4. Automatically refreshes token on 401 using a single-flight shared Promise and retries once
+ * 5. Universal envelope unwrapping for standard Spring ApiResponse { success, message, data, timestamp }
  */
 export async function apiFetch<T>(
   path: string,
@@ -210,72 +255,14 @@ export async function apiFetch<T>(
       !options._retry &&
       !path.includes('/auth/login') &&
       !path.includes('/auth/refresh') &&
-      !path.includes('/auth/signup')
+      !path.includes('/auth/signup') &&
+      !path.includes('/auth/otp')
     ) {
-      if (!isRefreshing) {
-        isRefreshing = true;
-
-        try {
-          const currentRefreshToken = getRefreshToken();
-          const refreshRes = await fetch(`${baseUrl.replace(/\/$/, '')}/auth/refresh`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Accept: 'application/json',
-            },
-            body: JSON.stringify({ refreshToken: currentRefreshToken || '' }),
-            credentials: 'include',
-          });
-
-          if (!refreshRes.ok) {
-            throw new Error(`Refresh failed with status ${refreshRes.status}`);
-          }
-
-          const refreshData = await refreshRes.json();
-          const rawPayload = refreshData?.data || refreshData;
-          const newAccessToken =
-            rawPayload?.AccessToken ||
-            rawPayload?.accessToken ||
-            refreshData?.AccessToken ||
-            refreshData?.accessToken;
-
-          const newRefreshToken =
-            rawPayload?.refreshToken ||
-            rawPayload?.RefreshToken ||
-            refreshData?.refreshToken;
-
-          if (newAccessToken) {
-            setAccessToken(newAccessToken);
-          }
-          if (newRefreshToken) {
-            setRefreshToken(newRefreshToken);
-          }
-
-          onRefreshed(newAccessToken);
-        } catch (refreshErr) {
-          setAccessToken(null);
-          setRefreshToken(null);
-          onRefreshed(null);
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('bookingsuite:session-expired'));
-          }
-          throw new Error('Session expired. Please sign in again.');
-        } finally {
-          isRefreshing = false;
-        }
+      const newToken = await executeTokenRefresh();
+      if (!newToken) {
+        throw new Error('Session expired. Please sign in again.');
       }
-
-      // Wait for the active refresh to complete then retry original request
-      return new Promise<T>((resolve, reject) => {
-        addRefreshSubscriber((newToken) => {
-          if (!newToken) {
-            return reject(new Error('Authentication failed.'));
-          }
-          apiFetch<T>(path, { ...options, _retry: true })
-            .then(resolve)
-            .catch(reject);
-        });
-      });
+      return apiFetch<T>(path, { ...options, _retry: true });
     }
 
     // Parse Response
@@ -298,45 +285,30 @@ export async function apiFetch<T>(
       method,
       url: fullUrl,
       status: response.status,
-      requestData: options.body ? tryParseJson(options.body) : undefined,
-      responseData: responseBody.data,
+      requestData: options.body ? sanitizeForLogging(tryParseJson(options.body)) : undefined,
+      responseData: sanitizeForLogging(responseBody?.data !== undefined ? responseBody.data : responseBody),
       durationMs,
     };
     notifyLog(logEntry);
 
-    console.log("API DEBUG:", {
-  status: response.status,
-  ok: response.ok,
-  statusText: response.statusText,
-  responseBody,
-});
+    // Treat 2xx and 302/304 with valid body as successful response from Spring Boot
+    const isSuccess = response.ok || response.status === 302 || response.status === 304;
 
- // Treat 302 as a success IF the JSON body indicates success AND contains data
-const isSuccessfulRedirect = response.status === 302 && 
-                             responseBody && 
-                             typeof responseBody === 'object' && 
-                             responseBody.success === true;
+    if (!isSuccess) {
+      const errorMsg =
+        responseBody?.message ||
+        responseBody?.error ||
+        (Array.isArray(responseBody?.errors)
+          ? responseBody.errors
+              .map((e: any) => e.defaultMessage || e.message || e)
+              .join(', ')
+          : null) ||
+        `HTTP ${response.status}: ${response.statusText}`;
 
-if (!response.ok && !isSuccessfulRedirect) {
-  const errorMsg =
-    responseBody?.message ||
-    responseBody?.error ||
-    (Array.isArray(responseBody?.errors)
-      ? responseBody.errors
-          .map((e: any) => e.defaultMessage || e.message || e)
-          .join(', ')
-      : null) ||
-    `HTTP ${response.status}: ${response.statusText}`;
-
-  throw new Error(errorMsg);
-}
-
-    // Unwrap envelope logic:
-    // If endpoint is an exception that returns raw DTO -> return responseBody
-    if (isRawDtoEndpoint(path)) {
-      return responseBody as T;
+      throw new Error(errorMsg);
     }
 
+    // Robust Universal Envelope Unwrapping:
     // If response contains standard Spring envelope { success, message, data, timestamp } -> unwrap data
     if (
       responseBody &&

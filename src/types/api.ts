@@ -27,6 +27,8 @@ export type RoomStatus =
   | 'MAINTENANCE'
   | 'OUT_OF_SERVICE';
 
+export type Gender = 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
+
 // Standard Backend Response Envelope
 export interface ApiResponse<T = any> {
   success?: boolean;
@@ -42,8 +44,10 @@ export interface HotelContactInfo {
   address: string;
   phoneNumber: string;
   email: string;
-  location: string;
+  location?: string;
 }
+
+export type HotelContactRequest = HotelContactInfo;
 
 export interface HotelRequest {
   id?: number;
@@ -68,6 +72,68 @@ export interface HotelResponse {
 }
 
 export type Hotel = HotelResponse;
+
+export interface RoomDetailDto {
+  id: number;
+  roomType: string;
+  basePrice: number;
+  capacity: number;
+  floor?: number;
+  photos: string[];
+  amenities: string[];
+}
+
+export interface HotelDetailResponse {
+  hotelId: number;
+  hotelName: string;
+  cityName: string;
+  address: string;
+  photos: string[];
+  amenities: string[];
+  calculatedTotalPrice: number;
+  rooms: RoomDetailDto[];
+}
+
+export interface HotelInfoResponse {
+  hotel: HotelResponse;
+  rooms: RoomResponse[];
+}
+
+// SEARCH CONTRACTS
+export interface HotelSearchRequest {
+  city: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string;   // YYYY-MM-DD
+  roomsCount: number;
+  pageNumber?: number;
+  pageSize?: number;
+  dateRangeValid?: boolean;
+}
+
+export interface HotelPriceDto {
+  hotelId: number;
+  hotelName: string;
+  cityName: string;
+  price: number;
+  photos?: string[];
+  amenities?: string[];
+}
+
+export interface PageHotelPriceDto {
+  content: HotelPriceDto[];
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  last?: boolean;
+  size?: number;
+  number?: number;
+  first?: boolean;
+  numberOfElements?: number;
+  empty?: boolean;
+}
+
+export type HotelSearchResponse = PageHotelPriceDto;
 
 // ROOM CONTRACTS
 export interface RoomRequest {
@@ -99,44 +165,6 @@ export interface RoomResponse {
 }
 
 export type Room = RoomResponse;
-
-export interface HotelInfoResponse {
-  hotel: HotelResponse;
-  rooms: RoomResponse[];
-}
-
-// SEARCH CONTRACTS
-export interface HotelSearchRequest {
-  city: string;
-  startDate: string; // YYYY-MM-DD
-  endDate: string;   // YYYY-MM-DD
-  roomsCount: number;
-  pageNumber: number;
-  pageSize: number;
-}
-
-export interface HotelPriceDto {
-  hotelId: number;
-  hotelName: string;
-  cityName: string;
-  price: number;
-  photos?: string[];
-  amenities?: string[];
-}
-
-export interface PageHotelPriceDto {
-  content: HotelPriceDto[];
-  pageNumber: number;
-  pageSize: number;
-  totalElements: number;
-  totalPages: number;
-  last?: boolean;
-  size?: number;
-  number?: number;
-  first?: boolean;
-  numberOfElements?: number;
-  empty?: boolean;
-}
 
 // INVENTORY CONTRACTS
 export interface InventoryResponse {
@@ -181,9 +209,11 @@ export interface HotelReport {
 export interface GuestRequest {
   id?: number;
   name: string;
-  gender: string;
+  gender: Gender | string;
   age: number;
 }
+
+export type GuestResponse = GuestRequest;
 
 export interface BookingRequest {
   hotelId: number;
@@ -222,18 +252,28 @@ export interface UserProfileRequest {
   lastName?: string;
   phoneNumber?: string;
   birthDate?: string;
-  gender?: string;
+  gender?: Gender | string;
+  bio?: string;
+}
+
+export interface UserProfileResponse {
+  name: string;
+  email: string;
+  lastName?: string;
+  phoneNumber?: string;
+  birthDate?: string;
+  gender?: Gender | string;
   bio?: string;
 }
 
 export interface UserResponse {
-  id: number;
+  id?: number;
   name: string;
   lastName?: string;
   email: string;
   phoneNumber?: string;
   birthDate?: string;
-  gender?: string;
+  gender?: Gender | string;
   bio?: string;
   roles?: Role[];
   role?: Role;
@@ -248,9 +288,20 @@ export interface SignupRequest {
   roles?: Role[];
 }
 
+export interface AuthResponse {
+  id?: number;
+  name?: string;
+  email?: string;
+}
+
 export interface LoginRequest {
   email: string;
   password?: string;
+}
+
+export interface OtpVerifyRequest {
+  email: string;
+  otpCode: string;
 }
 
 export interface LoginResponse {

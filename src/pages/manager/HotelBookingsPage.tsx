@@ -78,7 +78,8 @@ export const HotelBookingsPage: React.FC<HotelBookingsPageProps> = ({
   }, [activeHotelId]);
 
   const filteredBookings = bookings.filter((b) => {
-    const matchesStatus = statusFilter === 'ALL' || b.bookingStatus === statusFilter;
+    const currentStatus = b.bookingStatus || b.status;
+    const matchesStatus = statusFilter === 'ALL' || currentStatus === statusFilter;
     const matchesSearch =
       String(b.id || b.bookingId).includes(searchQuery) ||
       b.guests?.some((g) => g.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -126,21 +127,30 @@ export const HotelBookingsPage: React.FC<HotelBookingsPageProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {['ALL', 'CONFIRMED', 'PAYMENTS_PENDING', 'CANCELLED', 'CHECKED_IN', 'CHECKED_OUT'].map(
-            (st) => (
-              <button
-                key={st}
-                onClick={() => setStatusFilter(st)}
-                className={`px-3 py-1.5 rounded-xl font-semibold transition-all ${
-                  statusFilter === st
-                    ? 'bg-slate-900 text-white shadow-2xs'
-                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                {st.replace(/_/g, ' ')}
-              </button>
-            )
-          )}
+          {[
+            'ALL',
+            'CONFIRMED',
+            'PAYMENTS_PENDING',
+            'GUESTS_ADDED',
+            'RESERVED',
+            'IN_PROGRESS',
+            'COMPLETED',
+            'CANCELLED',
+            'EXPIRED',
+            'NO_SHOW',
+          ].map((st) => (
+            <button
+              key={st}
+              onClick={() => setStatusFilter(st)}
+              className={`px-3 py-1.5 rounded-xl font-semibold transition-all ${
+                statusFilter === st
+                  ? 'bg-slate-900 text-white shadow-2xs'
+                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              {st === 'ALL' ? 'All Statuses' : st.replace(/_/g, ' ')}
+            </button>
+          ))}
         </div>
       </div>
 

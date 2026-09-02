@@ -54,6 +54,11 @@ export const validateHotel = (data: {
 
   if (!data.contactInfo?.phoneNumber || !data.contactInfo.phoneNumber.trim()) {
     errors.phoneNumber = 'Phone number is required.';
+  } else {
+    const digits = data.contactInfo.phoneNumber.replace(/\D/g, '');
+    if (digits.length < 10 || digits.length > 15) {
+      errors.phoneNumber = 'Phone number must contain 10 to 15 digits (e.g. +18005550199).';
+    }
   }
 
   if (!data.contactInfo?.email || !isValidEmail(data.contactInfo.email)) {

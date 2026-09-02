@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Heart, MapPin, Sparkles, Star } from 'lucide
 import { useSettings } from '../context/SettingsContext';
 import { useWishlist } from '../context/WishlistContext';
 import { HotelPriceDto } from '../types/api';
+import { DEFAULT_HOTEL_PHOTOS, getValidHotelPhotos } from '../utils/imageUtils';
 
 interface HotelCardProps {
   hotel: HotelPriceDto;
@@ -14,15 +15,6 @@ interface HotelCardProps {
   };
 }
 
-const DEFAULT_INDIAN_HOTEL_PHOTOS = [
-  'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=800&auto=format&fit=crop&q=80',
-];
-
 export const HotelCard: React.FC<HotelCardProps> = ({ hotel, searchContext }) => {
   const [currentPhotoIdx, setCurrentPhotoIdx] = useState(0);
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -30,14 +22,7 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, searchContext }) =>
 
   const isFavorited = isInWishlist(hotel.hotelId);
 
-  const photosList =
-    hotel.photos && hotel.photos.length > 0
-      ? hotel.photos
-      : [
-          DEFAULT_INDIAN_HOTEL_PHOTOS[hotel.hotelId % DEFAULT_INDIAN_HOTEL_PHOTOS.length],
-          DEFAULT_INDIAN_HOTEL_PHOTOS[(hotel.hotelId + 1) % DEFAULT_INDIAN_HOTEL_PHOTOS.length],
-          DEFAULT_INDIAN_HOTEL_PHOTOS[(hotel.hotelId + 2) % DEFAULT_INDIAN_HOTEL_PHOTOS.length],
-        ];
+  const photosList = getValidHotelPhotos(hotel.photos, hotel.hotelId);
 
   const queryParams = new URLSearchParams();
   if (searchContext?.startDate) queryParams.set('startDate', searchContext.startDate);
@@ -82,12 +67,15 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel, searchContext }) =>
       {/* Photo Carousel Container */}
       <div className="relative w-full aspect-[20/19] rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 shadow-2xs">
         <img
-          src={photosList[currentPhotoIdx] || DEFAULT_INDIAN_HOTEL_PHOTOS[0]}
+          src={photosList[currentPhotoIdx] || DEFAULT_HOTEL_PHOTOS[0]}
           alt={hotel.hotelName}
           className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
           loading="lazy"
           onError={(e) => {
-            (e.target as HTMLImageElement).src = DEFAULT_INDIAN_HOTEL_PHOTOS[0];
+            const target = e.target as HTMLImageElement;
+            if (target.src !== DEFAULT_HOTEL_PHOTOS[0]) {
+              target.src = DEFAULT_HOTEL_PHOTOS[0];
+            }
           }}
         />
 

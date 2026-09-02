@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Building2, Lock, Mail } from 'lucide-react';
+import { Building2, KeyRound, Lock, Mail, RefreshCw, Send, ShieldCheck } from 'lucide-react';
 import { LoadingSpinner } from '../../components/LoadingSkeleton';
 import { useApiConfig } from '../../context/ApiConfigContext';
 import { useAuth } from '../../context/AuthContext';
@@ -8,19 +8,39 @@ import { useToast } from '../../context/ToastContext';
 import { getGoogleOAuthAuthorizationUrl } from '../../utils/oauthUtils';
 
 export const LoginPage: React.FC = () => {
-  const { login, handleOAuthSuccess } = useAuth();
+  const { login, loginWithOtp, sendOtp, handleOAuthSuccess } = useAuth();
   const { baseUrl } = useApiConfig();
   const navigate = useNavigate();
   const location = useLocation();
-  const { error: toastError, info: toastInfo } = useToast();
+  const { error: toastError, info: toastInfo, success: toastSuccess } = useToast();
 
+  const [authMode, setAuthMode] = useState<'password' | 'otp'>('password');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // OTP Login State
+  const [otpCode, setOtpCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState<string | null>(null);
 
   const queryParams = new URLSearchParams(location.search);
   const redirectUrl = queryParams.get('redirect') || '/';
+
+  // OTP Countdown timer
+  useEffect(() => {
+    let timer: any;
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   // Check if redirected back with OAuth2 token from backend
   useEffect(() => {
@@ -46,13 +66,14 @@ export const LoginPage: React.FC = () => {
           const isManager =
             loggedUser.roles?.includes('HOTEL_MANAGER') ||
             loggedUser.roles?.includes('ADMIN') ||
+            loggedUser.roles?.includes('OWNER') ||
             loggedUser.role === 'HOTEL_MANAGER' ||
-            loggedUser.role === 'ADMIN';
+            loggedUser.role === 'ADMIN' ||
+            loggedUser.role === 'OWNER';
 
           if (isManager) {
             navigate('/manager', { replace: true });
           } else {
-            // Redirect to landing page as requested
             navigate('/', { replace: true });
           }
         })
@@ -63,7 +84,7 @@ export const LoginPage: React.FC = () => {
     }
   }, [location.search]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       toastError('Validation Error', 'Please enter your email and password.');
@@ -76,13 +97,14 @@ export const LoginPage: React.FC = () => {
       const isManager =
         loggedUser.roles?.includes('HOTEL_MANAGER') ||
         loggedUser.roles?.includes('ADMIN') ||
+        loggedUser.roles?.includes('OWNER') ||
         loggedUser.role === 'HOTEL_MANAGER' ||
-        loggedUser.role === 'ADMIN';
+        loggedUser.role === 'ADMIN' ||
+        loggedUser.role === 'OWNER';
 
       if (isManager) {
         navigate('/manager', { replace: true });
       } else {
-        // Guest user goes to home page or saved non-manager redirect
         navigate(redirectUrl && !redirectUrl.startsWith('/manager') ? redirectUrl : '/', {
           replace: true,
         });
@@ -91,6 +113,64 @@ export const LoginPage: React.FC = () => {
       // toast shown in auth context
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleSendOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!email || !email.includes('@')) {
+      toastError('Invalid Email', 'Please enter a valid email address to receive OTP.');
+      return;
+    }
+
+    setIsSendingOtp(true);
+    try {
+      await sendOtp(email.trim());
+      setOtpSent(true);
+      setResendCooldown(60);
+      toastSuccess('OTP Code Sent', `A 6-digit one-time passcode was sent to ${email}`);
+    } catch (err: any) {
+      // toast shown in auth context
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanOtp = otpCode.trim();
+    if (!email || !cleanOtp) {
+      toastError('Validation Error', 'Please enter both email and the 6-digit OTP code.');
+      return;
+    }
+
+    if (cleanOtp.length < 4) {
+      toastError('Invalid OTP', 'Please enter a complete OTP code.');
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    try {
+      const loggedUser = await loginWithOtp(email.trim(), cleanOtp);
+      const isManager =
+        loggedUser.roles?.includes('HOTEL_MANAGER') ||
+        loggedUser.roles?.includes('ADMIN') ||
+        loggedUser.roles?.includes('OWNER') ||
+        loggedUser.role === 'HOTEL_MANAGER' ||
+        loggedUser.role === 'ADMIN' ||
+        loggedUser.role === 'OWNER';
+
+      if (isManager) {
+        navigate('/manager', { replace: true });
+      } else {
+        navigate(redirectUrl && !redirectUrl.startsWith('/manager') ? redirectUrl : '/', {
+          replace: true,
+        });
+      }
+    } catch {
+      // toast shown in auth context
+    } finally {
+      setIsVerifyingOtp(false);
     }
   };
 
@@ -103,7 +183,6 @@ export const LoginPage: React.FC = () => {
       'Redirecting to Google authentication...'
     );
 
-    // Redirect to backend Spring Security Google OAuth2 authorization endpoint
     setTimeout(() => {
       window.location.href = oauthEndpoint;
     }, 300);
@@ -119,18 +198,17 @@ export const LoginPage: React.FC = () => {
           </div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Sign In</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Welcome back. Sign in to access your bookings and saved stays.
+            Welcome back. Sign in to access your bookings and manage properties.
           </p>
         </div>
 
         {/* OAuth2 Providers */}
         <div className="space-y-2.5">
-          {/* Google OAuth2 */}
           <button
             type="button"
             onClick={handleGoogleOAuthLogin}
-            disabled={isSubmitting || !!oauthLoading}
-            className="w-full py-2.5 px-4 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-center gap-3 transition-colors shadow-2xs disabled:opacity-50"
+            disabled={isSubmitting || isSendingOtp || isVerifyingOtp || !!oauthLoading}
+            className="w-full py-2.5 px-4 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center justify-center gap-3 transition-colors shadow-2xs disabled:opacity-50 cursor-pointer"
           >
             {oauthLoading === 'google' ? (
               <LoadingSpinner className="py-0" text="Redirecting to Google..." />
@@ -164,54 +242,204 @@ export const LoginPage: React.FC = () => {
         <div className="relative flex items-center justify-center">
           <div className="border-t border-slate-200 dark:border-slate-800 w-full" />
           <span className="bg-white dark:bg-slate-900 px-3 text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-            or continue with email
+            or continue with
           </span>
         </div>
 
-        {/* Email & Password Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Email Address</label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@example.com"
-                required
-                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Password</label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
-              />
-            </div>
-          </div>
+        {/* Auth Mode Toggle Tabs (Password vs Email OTP) */}
+        <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl gap-1">
+          <button
+            type="button"
+            onClick={() => setAuthMode('password')}
+            className={`py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              authMode === 'password'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Lock className="w-3.5 h-3.5" />
+            <span>Password</span>
+          </button>
 
           <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            type="button"
+            onClick={() => setAuthMode('otp')}
+            className={`py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              authMode === 'otp'
+                ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
           >
-            {isSubmitting ? (
-              <LoadingSpinner className="py-0" text="Signing in..." />
-            ) : (
-              <span>Sign In →</span>
-            )}
+            <KeyRound className="w-3.5 h-3.5" />
+            <span>Email OTP</span>
           </button>
-        </form>
+        </div>
+
+        {/* Mode 1: Email & Password Form */}
+        {authMode === 'password' && (
+          <form onSubmit={handlePasswordSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  autoComplete="email"
+                  required
+                  className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  required
+                  className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+            >
+              {isSubmitting ? (
+                <LoadingSpinner className="py-0" text="Signing in..." />
+              ) : (
+                <span>Sign In with Password →</span>
+              )}
+            </button>
+          </form>
+        )}
+
+        {/* Mode 2: One-Time Passcode (OTP) Form */}
+        {authMode === 'otp' && (
+          <div className="space-y-4">
+            {!otpSent ? (
+              <form onSubmit={handleSendOtp} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Enter Email Address for OTP
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@example.com"
+                      autoComplete="email"
+                      required
+                      className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+                    We'll send a 6-digit verification code to your inbox.
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSendingOtp || !email}
+                  className="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                >
+                  {isSendingOtp ? (
+                    <LoadingSpinner className="py-0" text="Sending OTP Code..." />
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Send One-Time Passcode</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyOtpSubmit} className="space-y-4">
+                <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 rounded-2xl border border-rose-200 dark:border-rose-800 flex items-center justify-between">
+                  <div className="text-xs">
+                    <span className="text-slate-500 dark:text-slate-400 block text-[11px]">OTP Sent To</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{email}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOtpSent(false);
+                      setOtpCode('');
+                    }}
+                    className="text-[11px] text-rose-600 dark:text-rose-400 font-bold hover:underline"
+                  >
+                    Change
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Enter 6-Digit OTP Code
+                  </label>
+                  <div className="relative">
+                    <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                      placeholder="123456"
+                      autoComplete="one-time-code"
+                      required
+                      autoFocus
+                      className="w-full pl-10 pr-4 py-2.5 text-base tracking-widest font-mono font-bold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span>Didn't receive code?</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSendOtp()}
+                    disabled={resendCooldown > 0 || isSendingOtp}
+                    className="text-rose-600 dark:text-rose-400 font-bold hover:underline disabled:opacity-50 disabled:no-underline"
+                  >
+                    {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend OTP'}
+                  </button>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isVerifyingOtp || !otpCode || otpCode.length < 4}
+                  className="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                >
+                  {isVerifyingOtp ? (
+                    <LoadingSpinner className="py-0" text="Verifying Code..." />
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>Verify OTP & Sign In →</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+          </div>
+        )}
 
         {/* Footer */}
         <div className="text-center text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">

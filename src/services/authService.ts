@@ -24,6 +24,20 @@ export const authService = {
   },
 
   /**
+   * POST /auth/otp/send?email={email}
+   */
+  async sendOtp(email: string): Promise<string> {
+    return authApi.sendOtp(email);
+  },
+
+  /**
+   * POST /auth/otp/verify
+   */
+  async verifyOtp(data: { email: string; otpCode: string }): Promise<LoginResponse> {
+    return authApi.verifyOtp(data);
+  },
+
+  /**
    * POST /auth/logout
    */
   async logout(refreshToken?: string): Promise<void> {

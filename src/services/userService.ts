@@ -10,7 +10,7 @@ export const userService = {
   },
 
   /**
-   * PUT /users/profile
+   * PATCH /users/profile
    */
   async updateProfile(data: UserProfileRequest): Promise<UserResponse> {
     return userApi.updateProfile(data);

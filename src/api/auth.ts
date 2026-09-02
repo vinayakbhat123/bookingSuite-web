@@ -73,6 +73,46 @@ export const authApi = {
   },
 
   /**
+   * POST /auth/otp/send?email={email}
+   */
+  async sendOtp(email: string): Promise<string> {
+    return apiFetch<string>('/auth/otp/send', {
+      method: 'POST',
+      params: { email },
+      skipAuth: true,
+    });
+  },
+
+  /**
+   * POST /auth/otp/verify
+   * Body: { email, otpCode }
+   * Response: { success, message, data: { AccessToken }, timestamp }
+   */
+  async verifyOtp(data: { email: string; otpCode: string }): Promise<LoginResponse> {
+    const res = await apiFetch<LoginResponse>('/auth/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify(data),
+      skipAuth: true,
+    });
+
+    const accessToken = res?.AccessToken || (res as any)?.accessToken;
+    if (accessToken) {
+      setAccessToken(accessToken);
+    }
+    if (res?.refreshToken) {
+      setRefreshToken(res.refreshToken);
+    }
+
+    return {
+      AccessToken: accessToken,
+      accessToken: accessToken,
+      refreshToken: res?.refreshToken,
+      user: res?.user,
+      roles: res?.roles,
+    };
+  },
+
+  /**
    * POST /auth/logout
    * Body: { refreshToken }
    */

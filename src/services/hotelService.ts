@@ -214,8 +214,8 @@ export const hotelService = {
    * Body: { city, startDate, endDate, roomsCount, pageNumber, pageSize }
    * Returns: { content: HotelPriceDto[], pageNumber, pageSize, totalElements, totalPages }
    */
-  async searchHotels(params: HotelSearchRequest): Promise<PageHotelPriceDto> {
-    const res = await hotelsApi.searchHotels(params);
+  async searchHotels(params: HotelSearchRequest, signal?: AbortSignal): Promise<PageHotelPriceDto> {
+    const res = await hotelsApi.searchHotels(params, signal);
     const content = (res?.content || []).map(normalizeHotelPriceDto);
     return {
       content,
@@ -250,6 +250,28 @@ export const hotelService = {
     return {
       hotel: normalizeHotelResponse(raw.hotel || raw),
       rooms: (raw.rooms || []).map((r) => normalizeRoomResponse(r, hotelId)),
+    };
+  },
+
+  /**
+   * GET /hotels/{hotelId}/details?startDate={startDate}&endDate={endDate}
+   * Retrieve dynamic date-based stay pricing and room availability from backend
+   */
+  async getHotelDetailsWithPricing(
+    hotelId: number,
+    startDate: string,
+    endDate: string
+  ): Promise<import('../types/api').HotelDetailResponse> {
+    const raw = await hotelsApi.getHotelDetails(hotelId, startDate, endDate);
+    return {
+      hotelId: Number(raw?.hotelId || hotelId),
+      hotelName: raw?.hotelName || '',
+      cityName: raw?.cityName || '',
+      address: raw?.address || '',
+      photos: Array.isArray(raw?.photos) ? raw.photos : [],
+      amenities: Array.isArray(raw?.amenities) ? raw.amenities : [],
+      calculatedTotalPrice: Number(raw?.calculatedTotalPrice || 0),
+      rooms: Array.isArray(raw?.rooms) ? raw.rooms : [],
     };
   },
 
@@ -343,17 +365,14 @@ export const hotelService = {
 
   /**
    * GET /admin/hotels/owner
-   * Get hotels owned by logged-in manager/admin (with fallback to all hotels)
+   * Get hotels owned by logged-in manager/admin
    */
   async getOwnerHotels(): Promise<HotelResponse[]> {
     try {
       const list = await adminApi.getOwnerHotels();
-      if (list && list.length > 0) {
-        return list.map(normalizeHotelResponse);
-      }
-      return this.getAllHotels();
+      return Array.isArray(list) ? list.map(normalizeHotelResponse) : [];
     } catch {
-      return this.getAllHotels();
+      return [];
     }
   },
 

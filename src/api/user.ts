@@ -13,14 +13,15 @@ export const userApi = {
   },
 
   /**
-   * PUT /users/profile
+   * PATCH /users/profile
    * Body: UserProfileRequest ({ name, lastName, phoneNumber, birthDate, gender, bio })
    */
   async updateProfile(data: UserProfileRequest): Promise<UserResponse> {
-    return apiFetch<UserResponse>('/users/profile', {
-      method: 'PUT',
+    await apiFetch<string>('/users/profile', {
+      method: 'PATCH',
       body: JSON.stringify(data),
     });
+    return this.getMe();
   },
 
   /**

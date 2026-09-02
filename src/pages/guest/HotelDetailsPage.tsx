@@ -22,14 +22,7 @@ import { hotelService } from '../../services/hotelService';
 import { HotelInfoResponse, RoomResponse } from '../../types/api';
 import { calculateNights, formatDateForApi, getDaysAhead, getTomorrow } from '../../utils/dateUtils';
 import { formatCurrency } from '../../utils/formatters';
-
-const DEFAULT_GALLERY = [
-  'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&auto=format&fit=crop&q=80',
-  'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&auto=format&fit=crop&q=80',
-];
+import { DEFAULT_HOTEL_PHOTOS, getValidHotelPhotos } from '../../utils/imageUtils';
 
 export const HotelDetailsPage: React.FC = () => {
   const { hotelId } = useParams<{ hotelId: string }>();
@@ -50,6 +43,7 @@ export const HotelDetailsPage: React.FC = () => {
   const [checkInDate, setCheckInDate] = useState<string>(initialStartDate);
   const [checkOutDate, setCheckOutDate] = useState<string>(initialEndDate);
   const [roomsCount, setRoomsCount] = useState<number>(initialRoomsCount);
+  const [backendCalculatedTotal, setBackendCalculatedTotal] = useState<number | null>(null);
 
   const fetchHotelInfo = async () => {
     if (!hotelId) return;
@@ -71,6 +65,21 @@ export const HotelDetailsPage: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  // Query date-aware pricing from GET /hotels/{hotelId}/details when dates change
+  useEffect(() => {
+    if (!hotelId || !checkInDate || !checkOutDate) return;
+    hotelService
+      .getHotelDetailsWithPricing(Number(hotelId), checkInDate, checkOutDate)
+      .then((details) => {
+        if (details?.calculatedTotalPrice) {
+          setBackendCalculatedTotal(details.calculatedTotalPrice);
+        }
+      })
+      .catch(() => {
+        // Soft fallback to client estimation
+      });
+  }, [hotelId, checkInDate, checkOutDate]);
 
   useEffect(() => {
     fetchHotelInfo();
@@ -114,7 +123,7 @@ export const HotelDetailsPage: React.FC = () => {
   const hotel = hotelInfo.hotel;
   const rooms = hotelInfo.rooms || [];
   const nights = calculateNights(checkInDate, checkOutDate);
-  const photos = hotel.photos && hotel.photos.length > 0 ? hotel.photos : DEFAULT_GALLERY;
+  const photos = getValidHotelPhotos(hotel.photos, hotel.id);
 
   const estimatedTotal = selectedRoom ? selectedRoom.basePrice * nights * roomsCount : 0;
 
@@ -167,7 +176,7 @@ export const HotelDetailsPage: React.FC = () => {
         {/* Main large photo */}
         <div className="md:col-span-2 relative h-full bg-slate-100 dark:bg-slate-800">
           <img
-            src={photos[0] || DEFAULT_GALLERY[0]}
+            src={photos[0] || DEFAULT_HOTEL_PHOTOS[0]}
             alt={hotel.hotelName}
             className="w-full h-full object-cover"
           />
@@ -177,14 +186,14 @@ export const HotelDetailsPage: React.FC = () => {
         <div className="hidden md:grid grid-rows-2 gap-3 h-full">
           <div className="relative h-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
             <img
-              src={photos[1] || DEFAULT_GALLERY[1]}
+              src={photos[1] || DEFAULT_HOTEL_PHOTOS[1]}
               alt="Hotel room preview"
               className="w-full h-full object-cover"
             />
           </div>
           <div className="relative h-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
             <img
-              src={photos[2] || DEFAULT_GALLERY[2]}
+              src={photos[2] || DEFAULT_HOTEL_PHOTOS[2]}
               alt="Hotel amenity preview"
               className="w-full h-full object-cover"
             />
@@ -195,14 +204,14 @@ export const HotelDetailsPage: React.FC = () => {
         <div className="hidden md:grid grid-rows-2 gap-3 h-full">
           <div className="relative h-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
             <img
-              src={photos[3] || DEFAULT_GALLERY[3]}
+              src={photos[3] || DEFAULT_HOTEL_PHOTOS[3]}
               alt="Hotel suite preview"
               className="w-full h-full object-cover"
             />
           </div>
           <div className="relative h-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
             <img
-              src={photos[4] || DEFAULT_GALLERY[4]}
+              src={photos[4] || DEFAULT_HOTEL_PHOTOS[4]}
               alt="Hotel lounge preview"
               className="w-full h-full object-cover"
             />
@@ -373,11 +382,23 @@ export const HotelDetailsPage: React.FC = () => {
                   <span>
                     {formatCurrency(selectedRoom.basePrice)} × {nights} nights × {roomsCount} room(s)
                   </span>
-                  <span>{formatCurrency(estimatedTotal)}</span>
+                  <span>
+                    {formatCurrency(
+                      backendCalculatedTotal && backendCalculatedTotal > 0
+                        ? backendCalculatedTotal * roomsCount
+                        : estimatedTotal
+                    )}
+                  </span>
                 </div>
                 <div className="flex justify-between font-extrabold text-sm text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-800">
-                  <span>Estimated Total</span>
-                  <span>{formatCurrency(estimatedTotal)}</span>
+                  <span>Total (Backend Verified)</span>
+                  <span>
+                    {formatCurrency(
+                      backendCalculatedTotal && backendCalculatedTotal > 0
+                        ? backendCalculatedTotal * roomsCount
+                        : estimatedTotal
+                    )}
+                  </span>
                 </div>
               </div>
             )}

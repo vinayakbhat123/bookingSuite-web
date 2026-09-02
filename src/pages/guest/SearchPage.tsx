@@ -25,7 +25,9 @@ export const SearchPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const fetchSearchResults = async () => {
+  const activeControllerRef = React.useRef<AbortController | null>(null);
+
+  const fetchSearchResults = async (signal?: AbortSignal) => {
     setIsLoading(true);
     setErrorMsg(null);
 
@@ -39,22 +41,40 @@ export const SearchPage: React.FC = () => {
     };
 
     try {
-      const data = await hotelService.searchHotels(requestPayload);
+      const data = await hotelService.searchHotels(requestPayload, signal);
+      if (signal?.aborted) return;
       setSearchResult(data);
     } catch (err: any) {
+      if (signal?.aborted || err?.name === 'AbortError') {
+        // Request was cancelled due to newer input, ignore
+        return;
+      }
       const msg =
         typeof err === 'string'
           ? err
-          : 'Unable to query hotels from backend. Please check your connection and try again.';
+          : err?.message || 'Unable to query hotels from backend. Please check your connection and try again.';
       setErrorMsg(msg);
       toastError('Search Error', msg);
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) {
+        setIsLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchSearchResults();
+    // Abort previous in-flight search request
+    if (activeControllerRef.current) {
+      activeControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    activeControllerRef.current = controller;
+
+    fetchSearchResults(controller.signal);
+
+    return () => {
+      controller.abort();
+    };
   }, [city, startDate, endDate, roomsCount, pageNumber]);
 
   // Synchronize when hotels are added/updated in the manager portal
@@ -142,7 +162,7 @@ export const SearchPage: React.FC = () => {
           <h3 className="font-bold text-rose-900 text-base">Backend Search Request Failed</h3>
           <p className="text-xs text-rose-800 max-w-md mx-auto">{errorMsg}</p>
           <button
-            onClick={fetchSearchResults}
+            onClick={() => fetchSearchResults()}
             className="px-4 py-2 bg-rose-600 text-white text-xs font-semibold rounded-xl hover:bg-rose-700 transition-colors"
           >
             Retry Search

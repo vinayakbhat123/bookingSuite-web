@@ -52,5 +52,5 @@ export function getGoogleOAuthAuthorizationUrl(baseUrl?: string): string {
  */
 export function getGoogleOAuthCallbackUrl(baseUrl?: string): string {
   const serverRoot = getBackendServerRoot(baseUrl);
-  return `${serverRoot}/login/oauth2/code/google`;
+  return `${serverRoot}/api/v1/login/oauth2/code/google`;
 }

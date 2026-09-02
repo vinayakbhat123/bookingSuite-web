@@ -98,24 +98,28 @@ export const HotelReportsPage: React.FC<HotelReportsPageProps> = ({
   const totalRevenue = report?.totalRevenue ?? report?.TotalRevenue ?? 0;
   const averageRevenue = report?.averageRevenue ?? report?.AverageRevenue ?? 0;
 
-  // Prepare chart visual data
-  const revenueChartData = [
+  // Prepare chart visual data strictly from real backend metrics
+  const financialMetricsData = [
     {
-      category: 'Total Settled Revenue',
+      metric: 'Total Revenue',
       amount: totalRevenue,
+      formatted: formatCurrency(totalRevenue),
       fill: '#e11d48',
     },
     {
-      category: 'Average Revenue / Booking',
-      amount: averageRevenue * 10,
-      fill: '#d97706',
+      metric: 'Avg Revenue / Booking',
+      amount: averageRevenue,
+      formatted: formatCurrency(averageRevenue),
+      fill: '#059669',
     },
   ];
 
-  const pieData = [
-    { name: 'Completed Stays', value: Math.max(1, Math.round(totalBookings * 0.75)), color: '#10b981' },
-    { name: 'Pending Payments', value: Math.max(1, Math.round(totalBookings * 0.15)), color: '#f59e0b' },
-    { name: 'Cancelled Stays', value: Math.max(1, Math.round(totalBookings * 0.1)), color: '#f43f5e' },
+  const bookingsVolumeData = [
+    {
+      metric: 'Total Bookings',
+      count: totalBookings,
+      fill: '#2563eb',
+    },
   ];
 
   return (
@@ -253,7 +257,7 @@ export const HotelReportsPage: React.FC<HotelReportsPageProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-bold text-slate-900 text-sm">Financial Breakdown</h3>
-              <p className="text-xs text-slate-500">Total Gross and Yield Distributions</p>
+              <p className="text-xs text-slate-500">Gross Revenue & Average Yield per Booking</p>
             </div>
             <span className="text-xs font-semibold px-2.5 py-1 bg-slate-100 rounded-lg text-slate-700">
               {activeHotel?.hotelName || 'Selected Property'}
@@ -262,9 +266,9 @@ export const HotelReportsPage: React.FC<HotelReportsPageProps> = ({
 
           <div className="h-64 w-full pt-4">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={revenueChartData} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
+              <BarChart data={financialMetricsData} margin={{ top: 10, right: 20, left: 10, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="category" tick={{ fontSize: 11, fill: '#64748b' }} />
+                <XAxis dataKey="metric" tick={{ fontSize: 11, fill: '#64748b' }} />
                 <YAxis
                   tick={{ fontSize: 11, fill: '#64748b' }}
                   tickFormatter={(val) => `₹${val}`}
@@ -278,7 +282,7 @@ export const HotelReportsPage: React.FC<HotelReportsPageProps> = ({
                   }}
                 />
                 <Bar dataKey="amount" radius={[8, 8, 0, 0]}>
-                  {revenueChartData.map((entry, index) => (
+                  {financialMetricsData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
                   ))}
                 </Bar>
@@ -287,44 +291,36 @@ export const HotelReportsPage: React.FC<HotelReportsPageProps> = ({
           </div>
         </div>
 
-        {/* Booking Distribution Pie */}
+        {/* Real Data KPI Summary Card */}
         <div className="lg:col-span-4 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4 flex flex-col justify-between">
           <div>
-            <h3 className="font-bold text-slate-900 text-sm">Stay Status Breakdown</h3>
-            <p className="text-xs text-slate-500">Estimated lifecycle proportions</p>
+            <h3 className="font-bold text-slate-900 text-sm">Report Summary</h3>
+            <p className="text-xs text-slate-500">Verified backend metrics</p>
           </div>
 
-          <div className="h-48 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={45}
-                  outerRadius={65}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`pie-cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="space-y-4 py-2">
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-1">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Total Bookings</span>
+              <span className="text-2xl font-black text-slate-900">{totalBookings}</span>
+              <p className="text-[11px] text-slate-400">Total stays recorded for property</p>
+            </div>
+
+            <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100 space-y-1">
+              <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider block">Total Revenue</span>
+              <span className="text-2xl font-black text-rose-700">{formatCurrency(totalRevenue)}</span>
+              <p className="text-[11px] text-rose-500/80">Gross earnings settled</p>
+            </div>
+
+            <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 space-y-1">
+              <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider block">Average Revenue</span>
+              <span className="text-2xl font-black text-emerald-700">{formatCurrency(averageRevenue)}</span>
+              <p className="text-[11px] text-emerald-500/80">Average yield per booking</p>
+            </div>
           </div>
 
-          <div className="space-y-1.5 text-xs text-slate-600 border-t border-slate-100 pt-3">
-            {pieData.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span>{item.name}</span>
-                </div>
-                <span className="font-bold text-slate-900">{item.value} stays</span>
-              </div>
-            ))}
+          <div className="text-[11px] text-slate-400 border-t border-slate-100 pt-3 flex items-center justify-between">
+            <span>Data source:</span>
+            <code className="font-mono text-slate-600">GET /admin/hotels/{'{id}'}/report</code>
           </div>
         </div>
       </div>

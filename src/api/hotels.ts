@@ -23,7 +23,7 @@ export const hotelsApi = {
    * Body: { city, startDate, endDate, roomsCount, pageNumber, pageSize }
    * Returns: { content: [{ hotelId, hotelName, cityName, price }], pageNumber, pageSize, totalElements, totalPages }
    */
-  async searchHotels(params: HotelSearchRequest): Promise<PageHotelPriceDto> {
+  async searchHotels(params: HotelSearchRequest, signal?: AbortSignal): Promise<PageHotelPriceDto> {
     const res = await apiFetch<PageHotelPriceDto>('/hotels/search', {
       method: 'POST',
       body: JSON.stringify({
@@ -34,6 +34,7 @@ export const hotelsApi = {
         pageNumber: params.pageNumber,
         pageSize: params.pageSize,
       }),
+      signal,
     });
     return res;
   },
@@ -51,11 +52,27 @@ export const hotelsApi = {
   /**
    * GET /hotels/{hotelId}/info
    * Returns { hotel: HotelResponse, rooms: RoomResponse[] }
-   * Single call used for hotel details page
+   * Single call used for hotel details page fallback
    */
   async getHotelInfo(hotelId: number): Promise<HotelInfoResponse> {
     return apiFetch<HotelInfoResponse>(`/hotels/${hotelId}/info`, {
       method: 'GET',
+    });
+  },
+
+  /**
+   * GET /hotels/{hotelId}/details?startDate={startDate}&endDate={endDate}
+   * Returns { hotelId, hotelName, cityName, address, photos, amenities, calculatedTotalPrice, rooms }
+   * Returns dynamic date-aware stay pricing calculated by backend
+   */
+  async getHotelDetails(
+    hotelId: number,
+    startDate: string,
+    endDate: string
+  ): Promise<import('../types/api').HotelDetailResponse> {
+    return apiFetch<import('../types/api').HotelDetailResponse>(`/hotels/${hotelId}/details`, {
+      method: 'GET',
+      params: { startDate, endDate },
     });
   },
 };

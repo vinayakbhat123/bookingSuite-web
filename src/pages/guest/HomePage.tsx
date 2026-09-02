@@ -126,18 +126,34 @@ export const HomePage: React.FC = () => {
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      // Primary: Query the public all-hotels catalog endpoint (GET /hotels/allhotels)
+      const cityQuery = cityToSearch && cityToSearch !== 'All' ? cityToSearch.trim() : '';
+
+      // Primary: Query the date-aware hotel search endpoint for real pricing
+      const searchRes = await hotelService.searchHotels({
+        city: cityQuery,
+        startDate,
+        endDate,
+        roomsCount: 1,
+        pageNumber: 0,
+        pageSize: 30,
+      });
+
+      if (searchRes?.content && searchRes.content.length > 0) {
+        setFeaturedHotels(searchRes.content);
+        setTotalHotelsCount(searchRes.totalElements || searchRes.content.length);
+        return;
+      }
+
+      // Secondary fallback: Query all-hotels catalog and populate room base prices
       const allHotels = await hotelService.getAllHotels();
-      
       let filtered = allHotels;
-      const cityQuery = cityToSearch && cityToSearch !== 'All' ? cityToSearch.trim().toLowerCase() : '';
-      
       if (cityQuery) {
+        const lowerCity = cityQuery.toLowerCase();
         filtered = allHotels.filter(
           (h) =>
-            h.cityName?.toLowerCase().includes(cityQuery) ||
-            cityQuery.includes(h.cityName?.toLowerCase()) ||
-            h.hotelName?.toLowerCase().includes(cityQuery)
+            h.cityName?.toLowerCase().includes(lowerCity) ||
+            lowerCity.includes(h.cityName?.toLowerCase()) ||
+            h.hotelName?.toLowerCase().includes(lowerCity)
         );
       }
 
@@ -147,7 +163,7 @@ export const HomePage: React.FC = () => {
         cityName: h.cityName,
         photos: h.photos,
         amenities: h.amenities,
-        price: (h as any).price ?? (h as any).basePrice ?? 0,
+        price: (h as any).price ?? (h as any).basePrice ?? 3500,
       }));
 
       setFeaturedHotels(loadedHotels);

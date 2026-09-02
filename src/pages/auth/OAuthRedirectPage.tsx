@@ -34,14 +34,12 @@ export const OAuthRedirectPage: React.FC = () => {
         searchParams.get('errorMessage');
 
       if (error) {
-        toastError('OAuth2 Sign-In Failed', decodeURIComponent(error));
-        navigate('/login', { replace: true });
+        navigate('/auth/error?reason=oauth_failed', { replace: true });
         return;
       }
 
       if (!token) {
-        toastError('Authentication Missing', 'No authentication token was received from OAuth2 provider.');
-        navigate('/login', { replace: true });
+        navigate('/auth/error?reason=oauth_failed', { replace: true });
         return;
       }
 
@@ -68,11 +66,7 @@ export const OAuthRedirectPage: React.FC = () => {
       } catch (err: any) {
         console.error('OAuth processing error:', err);
         await logout();
-        toastError(
-          'Login Error',
-          'Could not retrieve user details after OAuth sign-in. Redirecting to login.'
-        );
-        navigate('/login', { replace: true });
+        navigate('/auth/error?reason=oauth_failed', { replace: true });
       }
     };
 

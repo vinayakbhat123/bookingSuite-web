@@ -106,7 +106,7 @@ export const HotelsManagementPage: React.FC<HotelsManagementPageProps> = ({ onHo
     setIsEditing(true);
     setEditingHotelId(hotelId);
 
-    // Immediately prefill from local state to ensure responsive UI
+    // Prefill from local state first if available
     const existing = hotels.find((h) => h.id === hotelId);
     if (existing) {
       setFormData({
@@ -217,6 +217,7 @@ export const HotelsManagementPage: React.FC<HotelsManagementPageProps> = ({ onHo
       : rawPhone.replace(/\D/g, '');
 
     const payload: HotelRequest = {
+      ...formData,
       id: isEditing && editingHotelId ? editingHotelId : undefined,
       hotelName: formData.hotelName.trim(),
       cityName: formData.cityName.trim(),
@@ -407,7 +408,7 @@ export const HotelsManagementPage: React.FC<HotelsManagementPageProps> = ({ onHo
                             ) : (
                               <>
                                 <Power className="w-3.5 h-3.5" />
-                                <span>Activate</span>
+                                <span>Activate Hotel</span>
                               </>
                             )}
                           </button>
@@ -579,19 +580,6 @@ export const HotelsManagementPage: React.FC<HotelsManagementPageProps> = ({ onHo
               placeholder="WIFI, SWIMMING_POOL, SPA, RESTAURANT, FITNESS_CENTER"
               className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 font-mono"
             />
-          </div>
-
-          <div className="flex items-center gap-2 pt-2">
-            <input
-              type="checkbox"
-              id="hotelActiveCheck"
-              checked={formData.active !== false}
-              onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-              className="w-4 h-4 text-rose-600 rounded"
-            />
-            <label htmlFor="hotelActiveCheck" className="text-xs font-semibold text-slate-700">
-              Active Property (listed in public search)
-            </label>
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">

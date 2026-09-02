@@ -17,6 +17,8 @@ interface AuthContextValue {
   isAdmin: boolean;
   isOwner: boolean;
   login: (data: LoginRequest) => Promise<UserResponse>;
+  loginWithOtp: (email: string, otpCode: string) => Promise<UserResponse>;
+  sendOtp: (email: string) => Promise<string>;
   loginWithRefreshToken: (token?: string) => Promise<UserResponse>;
   signup: (data: SignupRequest) => Promise<void>;
   logout: () => Promise<void>;
@@ -316,6 +318,68 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const sendOtp = async (email: string): Promise<string> => {
+    try {
+      const msg = await authService.sendOtp(email);
+      toastSuccess('OTP Sent', msg || 'A 6-digit OTP code has been sent to your email.');
+      return msg;
+    } catch (err: any) {
+      toastError('Failed to Send OTP', typeof err === 'string' ? err : err.message || 'Could not send OTP.');
+      throw err;
+    }
+  };
+
+  const loginWithOtp = async (email: string, otpCode: string): Promise<UserResponse> => {
+    setIsLoading(true);
+    try {
+      const res = await authService.verifyOtp({ email, otpCode });
+      const token = res.AccessToken || getAccessToken();
+      const jwtClaims = token ? decodeJwt(token) : null;
+      let resolvedRoles = resolveRoles(res.user || null, token, res.roles);
+
+      let resolvedUser: UserResponse;
+      if (res.user) {
+        resolvedUser = {
+          ...res.user,
+          roles: resolvedRoles,
+          role: resolvedRoles[0] || 'GUEST',
+        };
+      } else {
+        try {
+          const profile = await userService.getMe();
+          resolvedRoles = resolveRoles(profile, token, res.roles);
+          resolvedUser = {
+            ...profile,
+            roles: resolvedRoles,
+            role: resolvedRoles[0] || 'GUEST',
+          };
+        } catch {
+          resolvedUser = {
+            id: jwtClaims?.userId || jwtClaims?.id || 1,
+            name: jwtClaims?.name || email.split('@')[0],
+            email,
+            roles: resolvedRoles,
+            role: resolvedRoles[0] || 'GUEST',
+          };
+        }
+      }
+
+      setUser(resolvedUser);
+      setRoles(resolvedRoles);
+      if (resolvedRoles.length > 0) {
+        localStorage.setItem('bookingsuite_active_role', resolvedRoles[0]);
+      }
+
+      toastSuccess('Signed In via OTP', `Welcome back, ${resolvedUser.name || 'Traveler'}!`);
+      return resolvedUser;
+    } catch (err: any) {
+      toastError('OTP Verification Failed', typeof err === 'string' ? err : err.message || 'Invalid or expired OTP code.');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleOAuthSuccess = async (token: string, refreshToken?: string): Promise<UserResponse> => {
     setIsLoading(true);
     try {
@@ -513,6 +577,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin,
         isOwner,
         login,
+        loginWithOtp,
+        sendOtp,
         loginWithRefreshToken,
         signup,
         logout,
