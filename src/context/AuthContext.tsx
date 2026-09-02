@@ -32,17 +32,13 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserResponse | null>(null);
-  const [roles, setRoles] = useState<Role[]>(() => {
-    const savedRole = localStorage.getItem('bookingsuite_active_role');
-    return savedRole ? [normalizeRole(savedRole)] : [];
-  });
+  const [roles, setRoles] = useState<Role[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { error: toastError, success: toastSuccess, info: toastInfo } = useToast();
   const oauthProcessedRef = React.useRef(false);
 
   const resolveRoles = (userObj: UserResponse | null, token?: string | null, explicitRoles?: any): Role[] => {
     const jwtClaims = token ? decodeJwt(token) : null;
-    const storedRole = localStorage.getItem('bookingsuite_active_role');
 
     const extracted = extractRolesFromSources(
       explicitRoles,
@@ -50,8 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       userObj?.role,
       (userObj as any)?.authorities,
       (userObj as any)?.authority,
-      jwtClaims,
-      storedRole ? [storedRole] : undefined
+      jwtClaims
     );
 
     return extracted;
@@ -412,19 +407,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       toastSuccess('OAuth2 Sign-In Successful', `Welcome, ${fullUser.name || 'Traveler'}!`);
       return fullUser;
-    } catch {
-      const defaultRoles: Role[] = ['HOTEL_MANAGER', 'GUEST'];
-      const defaultUser: UserResponse = {
-        id: Date.now(),
-        name: 'OAuth Traveler',
-        email: 'user@oauth.com',
-        roles: defaultRoles,
-        role: 'HOTEL_MANAGER',
-      };
-      setUser(defaultUser);
-      setRoles(defaultRoles);
-      toastSuccess('OAuth2 Sign-In Successful', 'Logged in via OAuth2.');
-      return defaultUser;
+    } catch (err: any) {
+      toastError('OAuth2 Sign-In Failed', typeof err === 'string' ? err : err.message || 'Could not complete OAuth2 sign in.');
+      throw err;
     } finally {
       setIsLoading(false);
     }
