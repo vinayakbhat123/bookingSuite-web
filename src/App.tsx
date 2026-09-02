@@ -23,6 +23,9 @@ const BookingFlowPage = React.lazy(() => import('./pages/guest/BookingFlowPage')
 const HomePage = React.lazy(() => import('./pages/guest/HomePage').then((m) => ({ default: m.HomePage })));
 const HotelDetailsPage = React.lazy(() => import('./pages/guest/HotelDetailsPage').then((m) => ({ default: m.HotelDetailsPage })));
 const MyBookingsPage = React.lazy(() => import('./pages/guest/MyBookingsPage').then((m) => ({ default: m.MyBookingsPage })));
+const PaymentSuccessPage = React.lazy(() => import('./pages/guest/PaymentSuccessPage').then((m) => ({ default: m.PaymentSuccessPage })));
+const PaymentFailurePage = React.lazy(() => import('./pages/guest/PaymentFailurePage').then((m) => ({ default: m.PaymentFailurePage })));
+const BookingInvoicePage = React.lazy(() => import('./pages/guest/BookingInvoicePage').then((m) => ({ default: m.BookingInvoicePage })));
 const ProfilePage = React.lazy(() => import('./pages/guest/ProfilePage').then((m) => ({ default: m.ProfilePage })));
 const SearchPage = React.lazy(() => import('./pages/guest/SearchPage').then((m) => ({ default: m.SearchPage })));
 const SettingsPage = React.lazy(() => import('./pages/guest/SettingsPage').then((m) => ({ default: m.SettingsPage })));
@@ -82,6 +85,18 @@ export default function App() {
                         <Route path="/oauth2/redirect" element={<OAuthRedirectPage />} />
                         <Route path="/oauth2/callback" element={<OAuthRedirectPage />} />
 
+                        {/* Payment & Invoice Routes */}
+                        <Route path="/payment/success" element={<PaymentSuccessPage />} />
+                        <Route path="/payment/failure" element={<PaymentFailurePage />} />
+                        <Route
+                          path="/bookings/:bookingId/invoice"
+                          element={
+                            <ProtectedRoute>
+                              <BookingInvoicePage />
+                            </ProtectedRoute>
+                          }
+                        />
+
                         {/* Authenticated Guest Routes */}
                         <Route
                           path="/my-bookings"
@@ -91,6 +106,7 @@ export default function App() {
                             </ProtectedRoute>
                           }
                         />
+                        <Route path="/mybookings" element={<Navigate to="/my-bookings" replace />} />
                         <Route
                           path="/profile"
                           element={

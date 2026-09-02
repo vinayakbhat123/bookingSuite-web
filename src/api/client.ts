@@ -296,13 +296,18 @@ export async function apiFetch<T>(
 
     if (!isSuccess) {
       const errorMsg =
-        responseBody?.message ||
-        responseBody?.error ||
+        responseBody?.error?.message ||
+        responseBody?.data?.error?.message ||
+        (Array.isArray(responseBody?.error?.errors) ? responseBody.error.errors.join(', ') : null) ||
         (Array.isArray(responseBody?.errors)
           ? responseBody.errors
               .map((e: any) => e.defaultMessage || e.message || e)
               .join(', ')
           : null) ||
+        (typeof responseBody?.message === 'string' && responseBody.message !== 'Operation completed successfully'
+          ? responseBody.message
+          : null) ||
+        (typeof responseBody?.error === 'string' ? responseBody.error : null) ||
         `HTTP ${response.status}: ${response.statusText}`;
 
       throw new Error(errorMsg);

@@ -77,6 +77,27 @@ export const bookingsApi = {
   },
 
   /**
+   * GET /bookings/{bookingId}
+   * Retrieve single booking details
+   */
+  async getBookingById(bookingId: number): Promise<BookingResponse> {
+    return apiFetch<BookingResponse>(`/bookings/${bookingId}`, {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * POST /bookings/{bookingId}/payments/verify
+   * Verifies Stripe checkout session status and confirms booking
+   */
+  async verifyPayment(bookingId: number, sessionId?: string): Promise<BookingResponse> {
+    const query = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : '';
+    return apiFetch<BookingResponse>(`/bookings/${bookingId}/payments/verify${query}`, {
+      method: 'POST',
+    });
+  },
+
+  /**
    * GET /admin/hotels/{hotelId}/bookings
    */
   async getHotelBookings(hotelId: number): Promise<BookingResponse[]> {

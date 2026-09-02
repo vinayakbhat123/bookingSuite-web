@@ -228,8 +228,10 @@ export interface BookingResponse {
   bookingId?: number;
   hotelId?: number;
   hotelName?: string;
+  cityName?: string;
   roomId?: number;
   roomType?: RoomType | string;
+  roomNumber?: string;
   checkInDate: string;
   checkOutDate: string;
   roomsCount: number;
@@ -241,6 +243,7 @@ export interface BookingResponse {
   totalAmount?: number;
   createdAt?: string;
   updatedAt?: string;
+  stripeSessionId?: string;
   paymentSessionUrl?: string;
   hotel?: HotelResponse;
   room?: RoomResponse;
